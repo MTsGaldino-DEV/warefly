@@ -1,0 +1,46 @@
+<!doctype html>
+<html><body>
+<form name="dados">
+  <input name="identificador"> <input type="button" name="BotaoIdentificador" value="Buscar">
+  <input name="endereco" readonly> <input name="subalim" id="subalim" readonly>
+  <select name="motivoCausa" id="motivoCausa"><option value=""></option><option value="17">17 - MATERIAL</option><option value="22">22 - PROBLEMAS OPERACIONAIS NO SISTEMA</option></select>
+  <select name="rede" id="rede"><option value=""></option><option value="1">BT</option><option value="2">MT</option><option value="3">BT/MT</option></select>
+  <textarea name="infComplementares" id="infComplementares"></textarea>
+  <select id="selCodServico" name="selCodServico"><option value=""></option><option value="22">22</option><option value="291">291</option></select>
+  <select name="componente" id="componente"><option value=""></option></select>
+  <input type="button" id="btoServicos" name="btoServicos" value="+ Serviços">
+  <input type="Submit" value="Salvar" id="inserir" name="inserir" disabled>
+  <table><tbody id="tservicos"></tbody></table>
+</form>
+<script>
+  var $ = function (n) { return document.getElementsByName(n)[0] }
+  $('BotaoIdentificador').onclick = function () {
+    setTimeout(function () {
+      if ($('identificador').value === '3013248220') { $('endereco').value = 'RUA TESTE'; $('subalim').value = 'ABC01' }
+      else alert('Instalação não encontrada.')
+    }, 200)
+  }
+  $('selCodServico').addEventListener('change', function () {
+    setTimeout(function () { $('componente').innerHTML = '<option value=""></option><option value="649">MATERIAL</option><option value="12">POSTE</option>' }, 200)
+  })
+  var servico = null
+  $('btoServicos').onclick = function () {
+    if ($('componente').value !== '649') return alert('Escolha o componente')
+    servico = { codServ: '291', poste: '1', idTrMaterial: 'tmateriais_291_1', materiais: [] }
+    document.getElementById('tservicos').innerHTML =
+      '<tr><td>0</td><td>1</td><td>291 - REPOSICAO DE MATERIAL</td><td>MATERIAL</td>' +
+      '<td><a id="btoIncluiMaterial" style="cursor:pointer">Incluir Materiais</a></td></tr>' +
+      '<tr><td colspan="10"><table><tbody id="tmateriais_291_1"></tbody></table></td></tr>'
+    document.getElementById('btoIncluiMaterial').onclick = function () {
+      var j = window.open('material.html', 'materiais')
+      j.addEventListener('load', function () { j.setServico(servico) })
+    }
+  }
+  window.findObject = function (id) { return document.getElementById(id) }
+  window.addMaterial = function (idMaterial, s, codigo, desc, qtd) {
+    s.materiais.push(codigo)
+    document.getElementById(s.idTrMaterial).insertAdjacentHTML('beforeend',
+      '<tr><td>' + codigo + '</td><td>' + desc + '</td><td>' + qtd + '</td><td>x</td></tr>')
+  }
+</script>
+</body></html>
