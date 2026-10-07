@@ -1,0 +1,16 @@
+{
+  "name": "conector-warefly",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Conector local do Warefly: automações no GDIS pela rede interna",
+  "main": "servidor.js",
+  "scripts": {
+    "start": "node servidor.js",
+    "test": "node --test \"teste/*.test.js\""
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "playwright": "^1.44.0"
+  }
+}
