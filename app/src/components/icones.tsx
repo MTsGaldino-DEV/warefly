@@ -163,6 +163,13 @@ export const IcEquipes = () => (
   </Icone>
 )
 
+/** Automação: raio. */
+export const IcAutomacao = () => (
+  <Icone>
+    <path d="M13 2 4 14h7l-1 8 9-12h-7z" />
+  </Icone>
+)
+
 /** Seta de abrir e fechar grupo: aponta para baixo; o CSS gira quando recolhido. */
 export const IcSeta = () => (
   <Icone>

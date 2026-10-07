@@ -8,6 +8,7 @@ import { AdminAlmoxarifados } from './pages/admin/Almoxarifados'
 import { ImportarMateriais } from './pages/admin/ImportarMateriais'
 import { AdminMateriais, AdminUnidades } from './pages/admin/Materiais'
 import { SaldoInicial } from './pages/admin/SaldoInicial'
+import { RequisicaoMaterial } from './pages/automacao/RequisicaoMaterial'
 import { AdminUsuarios } from './pages/admin/Usuarios'
 import { Inicio } from './pages/Inicio'
 import { Login } from './pages/Login'
@@ -100,6 +101,7 @@ export default function App() {
               <Route path="admin/materiais/importar" element={<SoAdmin><ImportarMateriais /></SoAdmin>} />
               <Route path="admin/unidades" element={<SoAdmin><AdminUnidades /></SoAdmin>} />
               <Route path="admin/saldo-inicial" element={<SoAdmin><SaldoInicial /></SoAdmin>} />
+              <Route path="automacao/requisicao-material" element={<SoAdmin><RequisicaoMaterial /></SoAdmin>} />
               <Route path="*" element={<Aviso tipo="info">Página não encontrada.</Aviso>} />
             </Route>
           </Routes>

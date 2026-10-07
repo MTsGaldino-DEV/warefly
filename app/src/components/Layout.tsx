@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase'
 import { BuscaComando, DialogoBusca } from './BuscaGlobal'
 import {
   IcAlmoxarifados,
+  IcAutomacao,
   IcDivergencias,
   IcEntradas,
   IcEquipes,
@@ -57,6 +58,7 @@ export function useMenu(): ItemMenu[] {
     itens.push({ para: '/admin/materiais', rotulo: 'Materiais', grupo: 'Cadastros', icone: <IcMateriais /> })
     itens.push({ para: '/admin/unidades', rotulo: 'Unidades', grupo: 'Cadastros', icone: <IcUnidades /> })
     itens.push({ para: '/admin/saldo-inicial', rotulo: 'Saldo inicial', grupo: 'Cadastros', icone: <IcSaldoInicial /> })
+    itens.push({ para: '/automacao/requisicao-material', rotulo: 'Solicitar material no GDIS', grupo: 'Automação', icone: <IcAutomacao /> })
   }
   return itens
 }
