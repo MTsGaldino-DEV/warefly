@@ -11,18 +11,21 @@ class SessaoExpirada extends Error {}
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-function checarSessao(context) {
-  if (context.pages().some((p) => ehLogin(p.url()))) {
+/** O robô só olha para a própria aba e as janelas que ela abriu. */
+function checarSessao(page, paginas) {
+  if (page.isClosed()) throw new SessaoExpirada('O Edge foi fechado durante a tarefa.')
+  if (paginas.some((p) => !p.isClosed() && ehLogin(p.url()))) {
     throw new SessaoExpirada('Sessão do GDIS expirou: a tela voltou para o login.')
   }
 }
 
-/** Procura, em todas as janelas e frames, o primeiro que tem o seletor. */
-async function acharFrame(context, seletor, timeout) {
+/** Procura, nas janelas do robô e nos frames delas, o primeiro que tem o seletor. */
+async function acharFrame(page, paginas, seletor, timeout) {
   const fim = Date.now() + timeout
   while (Date.now() < fim) {
-    checarSessao(context)
-    for (const p of context.pages()) {
+    const abertas = paginas().filter((p) => !p.isClosed())
+    checarSessao(page, abertas)
+    for (const p of abertas) {
       for (const f of p.frames()) {
         try {
           if (await f.$(seletor)) return f
@@ -87,43 +90,58 @@ async function incluirItem({ janela, nota, item, dialogos, tempo = 5000 }) {
   )
 }
 
-async function requisitarMaterial({ context, page, pedido, urlNota, emitir, cancelado, tempo = {} }) {
+/** Fecha janelas de materiais que sobraram de uma execução anterior. */
+async function fecharJanelasDeMaterial(context, page) {
+  for (const p of context.pages()) {
+    if (p === page || p.isClosed()) continue
+    const ehJanela = await p.$('#codMaterial').then(Boolean, () => false)
+    if (ehJanela) await p.close({ runBeforeUnload: false }).catch(() => {})
+  }
+}
+
+async function requisitarMaterial({ context, page, dialogos, pedido, urlNota, emitir, cancelado, tempo = {} }) {
   const espera = { campos: 20000, item: 5000, ...tempo }
-  const dialogos = []
-  const aoDialogo = (d) => {
-    dialogos.push(d.message())
+  const alertas = []
+  dialogos.ativar((d) => {
+    alertas.push(d.message())
     emitir({ tipo: 'debug', msg: `Alerta do GDIS: ${d.message()}` })
     d.accept().catch(() => {})
-  }
-  const acompanhar = (p) => p.on('dialog', aoDialogo)
-  context.pages().forEach(acompanhar)
-  context.on('page', acompanhar)
+  })
+  // Janelas abertas a partir da aba do robô durante esta tarefa.
+  const novas = []
+  const registrar = (p) => novas.push(p)
+  context.on('page', registrar)
+  const paginas = () => [page, ...novas]
+  let janela = null
 
   async function etapa(id, msg, fn) {
-    if (cancelado()) throw new Cancelado('Cancelado.')
+    if (await cancelado()) throw new Cancelado('Cancelado.')
     emitir({ tipo: 'etapa', id, msg, estado: 'andamento' })
-    const dialogosAntes = dialogos.length
+    const alertasAntes = alertas.length
     try {
       const r = await fn()
       emitir({ tipo: 'etapa', id, msg, estado: 'ok' })
       return r
     } catch (e) {
-      const alerta = dialogos.slice(dialogosAntes).join(' / ')
+      const alerta = alertas.slice(alertasAntes).join(' / ')
       const texto = alerta && !e.message.includes(alerta) ? `${e.message} GDIS: ${alerta}` : e.message
       emitir({ tipo: 'etapa', id, msg: `${msg}: ${texto}`, estado: 'erro' })
       if (e instanceof Cancelado || e instanceof SessaoExpirada) throw e
+      checarSessao(page, paginas())
       throw new Error(texto)
     }
   }
 
   try {
+    await fecharJanelasDeMaterial(context, page)
+
     const nota = await etapa('abrir', 'Abrir nota corretiva nova', async () => {
       await page.goto(urlNota, { waitUntil: 'domcontentloaded', timeout: 30000 })
-      checarSessao(context)
+      checarSessao(page, paginas())
       const botaoNovo = '[name="btoNovo"], input[type="button"][value="Novo"]'
-      const comNovo = await acharFrame(context, botaoNovo, espera.campos)
+      const comNovo = await acharFrame(page, paginas, botaoNovo, espera.campos)
       await comNovo.locator(botaoNovo).first().click()
-      return acharFrame(context, '[name="identificador"]', espera.campos)
+      return acharFrame(page, paginas, '[name="BotaoIdentificador"]', espera.campos)
     })
 
     await etapa('instalacao', `Buscar instalação ${pedido.instalacao}`, async () => {
@@ -139,7 +157,7 @@ async function requisitarMaterial({ context, page, pedido, urlNota, emitir, canc
           { timeout: espera.campos },
         )
         .catch(() => {
-          checarSessao(context)
+          checarSessao(page, paginas())
           throw new Error('Instalação não encontrada: o GDIS não preencheu o endereço.')
         })
     })
@@ -178,9 +196,9 @@ async function requisitarMaterial({ context, page, pedido, urlNota, emitir, canc
         })
     })
 
-    const janela = await etapa('janela', 'Abrir a janela de materiais', async () => {
+    janela = await etapa('janela', 'Abrir a janela de materiais', async () => {
       const [j] = await Promise.all([
-        context.waitForEvent('page', { timeout: espera.campos }),
+        nota.page().waitForEvent('popup', { timeout: espera.campos }),
         nota.locator('#tservicos [id="btoIncluiMaterial"]').last().click(),
       ])
       await j.waitForLoadState('load')
@@ -192,12 +210,12 @@ async function requisitarMaterial({ context, page, pedido, urlNota, emitir, canc
 
     let incluidos = 0
     for (const item of pedido.itens) {
-      if (cancelado()) throw new Cancelado('Cancelado.')
-      checarSessao(context)
+      if (await cancelado()) throw new Cancelado('Cancelado.')
+      checarSessao(page, paginas())
       const codigo = String(item.codigo)
       emitir({ tipo: 'item', codigo, estado: 'andamento' })
       try {
-        const conferido = await incluirItem({ janela, nota, item, dialogos, tempo: espera.item })
+        const conferido = await incluirItem({ janela, nota, item, dialogos: alertas, tempo: espera.item })
         incluidos++
         emitir({
           tipo: 'item',
@@ -207,6 +225,7 @@ async function requisitarMaterial({ context, page, pedido, urlNota, emitir, canc
         })
       } catch (e) {
         emitir({ tipo: 'item', codigo, estado: 'erro', msg: e.message })
+        checarSessao(page, paginas())
       }
     }
 
@@ -216,8 +235,10 @@ async function requisitarMaterial({ context, page, pedido, urlNota, emitir, canc
 
     return { incluidos, total: pedido.itens.length }
   } finally {
-    context.off('page', acompanhar)
-    context.pages().forEach((p) => p.off('dialog', aoDialogo))
+    // Janela de materiais esquecida aberta trava a próxima execução.
+    if (janela && !janela.isClosed()) await janela.close({ runBeforeUnload: false }).catch(() => {})
+    context.off('page', registrar)
+    dialogos.desativar()
   }
 }
 

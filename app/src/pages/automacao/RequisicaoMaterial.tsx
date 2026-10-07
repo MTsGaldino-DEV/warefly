@@ -3,12 +3,13 @@ import { useCatalogo } from '../../auth/CatalogoContext'
 import { MaterialBusca } from '../../components/MaterialBusca'
 import { Aviso, Campo, PaginaTopo, Regiao, StatusBadge, Vazio } from '../../components/ui'
 import {
+  ANDAMENTO_VAZIO,
+  aplicarEvento,
   chamarConector,
   ouvirConector,
   pingConector,
   type EstadoConector,
   type EstadoPasso,
-  type EventoConector,
 } from '../../lib/conector'
 import {
   INSTALACAO_PADRAO,
@@ -44,14 +45,6 @@ function guardar(g: Guardado) {
 const TOM: Record<EstadoPasso, 'info' | 'ok' | 'alerta'> = { andamento: 'info', ok: 'ok', erro: 'alerta' }
 const ROTULO: Record<EstadoPasso, string> = { andamento: 'Em andamento', ok: 'Feito', erro: 'Erro' }
 
-type Andamento = {
-  etapas: { id: string; msg: string; estado: EstadoPasso }[]
-  itens: Record<string, { estado: EstadoPasso; msg?: string }>
-  fim: Extract<EventoConector, { tipo: 'fim' }> | null
-}
-
-const ANDAMENTO_VAZIO: Andamento = { etapas: [], itens: {}, fim: null }
-
 export function RequisicaoMaterial() {
   const { material, materiais } = useCatalogo()
   const [inicial] = useState(lerGuardado)
@@ -62,11 +55,13 @@ export function RequisicaoMaterial() {
   const [textoLista, setTextoLista] = useState('')
   const [errosLista, setErrosLista] = useState<string[]>([])
 
+  // O conector guarda login pendente e andamento; a aba relê tudo pelo /ping
+  // e os eventos só adiantam o que o próximo /ping traria.
   const [conector, setConector] = useState<EstadoConector | null | undefined>(undefined)
-  const [aguardandoLogin, setAguardandoLogin] = useState(false)
   const [mensagem, setMensagem] = useState<{ tipo: 'erro' | 'info' | 'sucesso'; texto: string } | null>(null)
-  const [andamento, setAndamento] = useState<Andamento>(ANDAMENTO_VAZIO)
   const [ocupado, setOcupado] = useState(false)
+  const aguardandoLogin = !!conector?.aguardandoLogin
+  const andamento = conector?.andamento ?? ANDAMENTO_VAZIO
 
   useEffect(() => guardar({ periodo, instalacao, itens }), [periodo, instalacao, itens])
 
@@ -86,24 +81,15 @@ export function RequisicaoMaterial() {
   useEffect(() => {
     if (!ligado) return
     return ouvirConector((e) => {
-      if (e.tipo === 'aguardando_login') setAguardandoLogin(true)
-      if (e.tipo === 'sessao_ok') {
-        setAguardandoLogin(false)
-        setConector((c) => (c ? { ...c, sessaoOk: true } : c))
-      }
-      if (e.tipo === 'sessao_perdida') {
-        setAguardandoLogin(false)
-        setConector((c) => (c ? { ...c, sessaoOk: false } : c))
-        setMensagem({ tipo: 'erro', texto: e.msg })
-      }
-      if (e.tipo === 'etapa')
-        setAndamento((a) => ({
-          ...a,
-          etapas: [...a.etapas.filter((x) => x.id !== e.id), { id: e.id, msg: e.msg, estado: e.estado }],
-        }))
-      if (e.tipo === 'item')
-        setAndamento((a) => ({ ...a, itens: { ...a.itens, [e.codigo]: { estado: e.estado, msg: e.msg } } }))
-      if (e.tipo === 'fim') setAndamento((a) => ({ ...a, fim: e }))
+      if (e.tipo === 'sessao_perdida') setMensagem({ tipo: 'erro', texto: e.msg })
+      setConector((c) => {
+        if (!c) return c
+        if (e.tipo === 'aguardando_login') return { ...c, aguardandoLogin: true }
+        if (e.tipo === 'sessao_ok') return { ...c, sessaoOk: true, aguardandoLogin: false }
+        if (e.tipo === 'sessao_perdida') return { ...c, sessaoOk: false, aguardandoLogin: false }
+        if (e.tipo === 'fim') return { ...c, tarefaAtiva: false, andamento: aplicarEvento(c.andamento, e) }
+        return { ...c, andamento: aplicarEvento(c.andamento, e) }
+      })
     })
   }, [ligado])
 
@@ -146,9 +132,8 @@ export function RequisicaoMaterial() {
 
   function montar() {
     void acao(async () => {
-      setAndamento(ANDAMENTO_VAZIO)
       await chamarConector('/requisicao-material', paraEnvio(periodo, instalacao, itens))
-      setConector((c) => (c ? { ...c, tarefaAtiva: true } : c))
+      setConector((c) => (c ? { ...c, tarefaAtiva: true, andamento: ANDAMENTO_VAZIO } : c))
     })
   }
 
@@ -178,7 +163,12 @@ export function RequisicaoMaterial() {
               type="button"
               className={aguardandoLogin ? 'botao secundario' : 'botao'}
               disabled={ocupado || rodando}
-              onClick={() => void acao(() => chamarConector('/sessao/iniciar'))}
+              onClick={() =>
+                void acao(async () => {
+                  await chamarConector('/sessao/iniciar')
+                  setConector((c) => (c ? { ...c, aguardandoLogin: true } : c))
+                })
+              }
             >
               Abrir login do GDIS
             </button>
@@ -190,7 +180,7 @@ export function RequisicaoMaterial() {
                 onClick={() =>
                   void acao(async () => {
                     await chamarConector('/sessao/confirmar')
-                    setConector((c) => (c ? { ...c, sessaoOk: true } : c))
+                    setConector((c) => (c ? { ...c, sessaoOk: true, aguardandoLogin: false } : c))
                   })
                 }
               >

@@ -31,8 +31,25 @@ async function abrirNavegador({ headless = false } = {}) {
     }
   })
 
+  // Um só ouvinte de alertas para o navegador inteiro. Enquanto o robô
+  // trabalha, o fluxo ativa um tratador que aceita e registra. Fora disso o
+  // alerta fica na tela para a pessoa: sem nenhum ouvinte o Playwright
+  // descartaria sozinho, inclusive o confirm do Salvar.
+  let tratador = null
+  context.on('dialog', (d) => {
+    if (tratador) tratador(d)
+  })
+  const dialogos = {
+    ativar(fn) {
+      tratador = fn
+    },
+    desativar() {
+      tratador = null
+    },
+  }
+
   const page = await context.newPage()
-  return { browser, context, page }
+  return { browser, context, page, dialogos }
 }
 
 function ehLogin(url) {

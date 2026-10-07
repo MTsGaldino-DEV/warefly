@@ -3,7 +3,9 @@ const assert = require('node:assert/strict')
 const path = require('node:path')
 const express = require('express')
 const { abrirNavegador } = require('../gdis')
-const { requisitarMaterial, incluirItem } = require('../fluxos/requisicaoMaterial')
+const { requisitarMaterial, incluirItem, Cancelado, SessaoExpirada } = require('../fluxos/requisicaoMaterial')
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 let servidor, base, nav
 
@@ -20,19 +22,23 @@ test.after(async () => {
   servidor.close()
 })
 
-async function rodar(pedido) {
+async function rodar(pedido, extras = {}) {
   const eventos = []
   const resultado = await requisitarMaterial({
     context: nav.context,
     page: nav.page,
+    dialogos: nav.dialogos,
     pedido,
     urlNota: `${base}/nota.html`,
     emitir: (e) => eventos.push(e),
     cancelado: () => false,
     tempo: { campos: 3000 },
+    ...extras,
   })
   return { resultado, eventos }
 }
+
+const UM_ITEM = { periodo: '2026-05', instalacao: '3013248220', itens: [{ codigo: '1776', quantidade: 1 }] }
 
 const itensDe = (eventos, estado) => eventos.filter((e) => e.tipo === 'item' && e.estado === estado)
 
@@ -89,4 +95,49 @@ test('alerta do GDIS na inclusão vira erro do item', async () => {
   })
   await assert.rejects(incluirItem({ janela, nota, item: { codigo: '1776', quantidade: 1 }, dialogos }), /já existe na lista/)
   await janela.close()
+})
+
+test('fora do robô, um confirm do GDIS fica esperando a pessoa', async () => {
+  await rodar(UM_ITEM)
+  const outra = await nav.context.newPage()
+  await outra.goto(`${base}/novo.html`)
+  await outra.evaluate(() => {
+    setTimeout(() => {
+      window.resposta = confirm('Confirma a gravação?')
+    }, 0)
+  })
+  await sleep(300)
+  const lendo = outra.evaluate(() => String(window.resposta)).catch(() => 'fechada')
+  const resposta = await Promise.race([lendo, sleep(1500).then(() => 'pendente')])
+  assert.equal(resposta, 'pendente', 'o confirm não pode ser respondido sozinho')
+  await outra.close({ runBeforeUnload: false })
+})
+
+test('cancelar no meio não deixa a janela de materiais travar a próxima', async () => {
+  let chamadas = 0
+  const pedido = { ...UM_ITEM, itens: [{ codigo: '1776', quantidade: 1 }, { codigo: '240', quantidade: 2 }] }
+  // 5 etapas antes dos itens + 1 por item: a 7ª consulta é antes do segundo item.
+  await assert.rejects(rodar(pedido, { cancelado: () => ++chamadas >= 7 }), Cancelado)
+  const { resultado } = await rodar(UM_ITEM)
+  assert.deepEqual(resultado, { incluidos: 1, total: 1 })
+})
+
+test('o robô só mexe na própria aba, mesmo com outra nota aberta', async () => {
+  const outra = await nav.context.newPage()
+  await outra.goto(`${base}/novo.html`)
+  await rodar(UM_ITEM)
+  assert.equal(await outra.inputValue('[name="identificador"]'), '')
+  assert.equal(await nav.page.inputValue('[name="identificador"]'), '3013248220')
+  await outra.close()
+})
+
+// Fecha a aba do robô: precisa ser o último teste do arquivo.
+test('fechar o Edge no meio para a tarefa como sessão perdida', async () => {
+  let chamadas = 0
+  const pedido = { ...UM_ITEM, itens: [{ codigo: '1776', quantidade: 1 }, { codigo: '240', quantidade: 2 }] }
+  const cancelado = async () => {
+    if (++chamadas === 6) await nav.page.close({ runBeforeUnload: false })
+    return false
+  }
+  await assert.rejects(rodar(pedido, { cancelado }), SessaoExpirada)
 })
