@@ -1,3 +1,5 @@
+import { novoId } from './id'
+
 const LADO_MAIOR = 1600
 const QUALIDADE = 0.7
 
@@ -7,7 +9,7 @@ export function dimensoesAlvo(largura: number, altura: number, ladoMaior = LADO_
 }
 
 export function caminhoFoto(remessaId: string): string {
-  return `${remessaId}/${crypto.randomUUID()}.jpg`
+  return `${remessaId}/${novoId()}.jpg`
 }
 
 /** Comprime no cliente: lado maior 1600 px, JPEG ~0,7. */

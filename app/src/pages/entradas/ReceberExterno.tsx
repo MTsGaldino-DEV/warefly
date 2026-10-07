@@ -7,6 +7,7 @@ import { Aviso, Campo, Carregando, PaginaTopo, Vazio } from '../../components/ui
 import { enviarFoto } from '../../lib/compartilhado'
 import { mensagemErro } from '../../lib/erros'
 import { formatarDoc, hojeISO } from '../../lib/formato'
+import { novoId } from '../../lib/id'
 import { supabase } from '../../lib/supabase'
 import { umOuErro, listaOuErro, useConsulta } from '../../lib/useConsulta'
 
@@ -39,7 +40,7 @@ function Form({
   const navegar = useNavigate()
   const regional = almoxResponsavel.find((a) => a.tipo === 'regional')
   // O id sai daqui porque a foto sobe antes, na pasta da remessa
-  const [remessaId] = useState(() => crypto.randomUUID())
+  const [remessaId] = useState(() => novoId())
   const [documento, setDocumento] = useState('')
   const [dataDoc, setDataDoc] = useState(hojeISO())
   const [linhas, setLinhas] = useState<LinhaConferencia[]>(() =>

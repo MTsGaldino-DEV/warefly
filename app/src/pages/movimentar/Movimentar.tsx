@@ -8,6 +8,7 @@ import { Aviso, Campo, PaginaTopo, Vazio } from '../../components/ui'
 import { saldosDe } from '../../lib/compartilhado'
 import { mensagemErro } from '../../lib/erros'
 import { formatarDoc, formatarQtd, formatarSinal, hojeISO, lerNumero, qtdValida, rotuloStatus } from '../../lib/formato'
+import { novoId } from '../../lib/id'
 import { validarQuemRetirou } from '../../lib/saida'
 import { supabase, type Almox, type Enum } from '../../lib/supabase'
 import { listaOuErro, useConsulta } from '../../lib/useConsulta'
@@ -108,7 +109,7 @@ export function Saida() {
   const [ok, setOk] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
   // Id gerado aqui: repetir o envio após uma resposta perdida não duplica a saída
-  const [idRegistro, setIdRegistro] = useState(() => crypto.randomUUID())
+  const [idRegistro, setIdRegistro] = useState(() => novoId())
   const ehBase = atual?.tipo === 'base'
   const exigeQuem = ehBase && motivo === 'aplicacao'
 
@@ -136,7 +137,7 @@ export function Saida() {
     })
     setOcupado(false)
     if (error) return setErro(mensagemErro(error))
-    setIdRegistro(crypto.randomUUID())
+    setIdRegistro(novoId())
     const { data: s } = await supabase.from('saidas').select('numero').eq('id', id).single()
     setOk(`${formatarDoc('SAI', s?.numero ?? 0)} registrada.`)
     setLinhas([])
@@ -230,7 +231,7 @@ export function RemessaAvulsa({ tipo }: { tipo: 'transferencia' | 'devolucao' })
   const [observacao, setObservacao] = useState('')
   const [erro, setErro] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
-  const [idRegistro] = useState(() => crypto.randomUUID())
+  const [idRegistro] = useState(() => novoId())
   const pai = almox(almox(origemId)?.pai_id)
 
   useEffect(() => {
@@ -328,7 +329,7 @@ export function Ajuste() {
   const [erro, setErro] = useState<string | null>(null)
   const [ok, setOk] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
-  const [idRegistro, setIdRegistro] = useState(() => crypto.randomUUID())
+  const [idRegistro, setIdRegistro] = useState(() => novoId())
 
   if (!almoxGeridos.length) return <Vazio>Ajuste de estoque é feito pela gestão do almoxarifado ou pelo administrador.</Vazio>
 
@@ -352,7 +353,7 @@ export function Ajuste() {
     })
     setOcupado(false)
     if (error) return setErro(mensagemErro(error))
-    setIdRegistro(crypto.randomUUID())
+    setIdRegistro(novoId())
     const { data: a } = await supabase.from('ajustes').select('numero').eq('id', id).single()
     setOk(`${formatarDoc('AJU', a?.numero ?? 0)} registrado. O ajuste aparece em destaque no painel da gestão.`)
     setLinhas([])
