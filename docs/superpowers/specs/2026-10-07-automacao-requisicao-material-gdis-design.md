@@ -68,7 +68,7 @@ O `gdis.js` mantém o que o conector atual já resolve: Edge visível, `--disabl
 | `sessao_perdida` | `msg` | Redirecionado ao login durante a tarefa |
 | `etapa` | `id`, `msg`, `estado` (`andamento` \| `ok` \| `erro`) | Passos 1 a 5 e 7 |
 | `item` | `codigo`, `estado` (`andamento` \| `ok` \| `erro`), `msg?` | Cada material do passo 6 |
-| `fim` | `incluidos`, `total`, `msg` | Tarefa encerrada (concluída, com falha ou cancelada) |
+| `fim` | `ok`, `incluidos`, `total`, `msg` | Tarefa encerrada (`ok: true` concluída; `false` com falha ou cancelada) |
 | `debug` | `msg` | Detalhes para diagnóstico |
 
 ## 4. Fluxo do robô
