@@ -1,0 +1,22 @@
+# Só app/ e design-system/ entram no build.
+**/node_modules
+**/dist
+.git
+.superpowers
+.vscode
+
+# Credenciais da raiz (inclui a chave de serviço do Supabase): nunca no build.
+.env
+.env.*
+app/.env.*
+
+# Fora do site
+conector
+supabase
+docs
+*.jsp
+*.xlsx
+*.MD
+app/e2e
+app/test-results
+app/playwright-report

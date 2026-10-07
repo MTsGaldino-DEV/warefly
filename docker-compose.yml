@@ -1,0 +1,10 @@
+services:
+  warefly:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    image: warefly-app
+    container_name: warefly
+    ports:
+      - "${WAREFLY_PORTA:-8090}:80"
+    restart: unless-stopped
