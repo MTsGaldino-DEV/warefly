@@ -1,6 +1,6 @@
 # Conector Warefly × GDIS
 
-Roda na sua máquina e faz automações no GDIS (rede interna da Cemig) a pedido da aba **Automação** do Warefly.
+Roda na sua máquina e faz automações no GDIS (rede interna da Cemig) a pedido da área **Administração → Automações** do Warefly (menu do ícone de perfil, só admin).
 
 ## Instalar
 
@@ -13,7 +13,7 @@ Usa o Microsoft Edge instalado na máquina.
 
     npm start
 
-Deixe a janela aberta. No Warefly, abra **Automação → Solicitar material no GDIS**, clique em **Abrir login do GDIS**, entre no GDIS (senha e reCAPTCHA) e clique em **Já entrei**.
+Deixe a janela aberta. No Warefly, abra o menu do perfil → **Administração → Automações → Solicitar material no GDIS**, clique em **Abrir login do GDIS**, entre no GDIS (senha e reCAPTCHA) e clique em **Já entrei**.
 
 O robô preenche a nota e **não salva**: revise no GDIS e clique em Salvar.
 

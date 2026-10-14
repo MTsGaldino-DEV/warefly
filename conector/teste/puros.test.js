@@ -3,6 +3,8 @@ const assert = require('node:assert/strict')
 const { codigosPeriodo, frasePeriodo } = require('../periodo')
 const { validarPedido } = require('../validacao')
 const { origemPermitida } = require('../origens')
+const { bannerInicio, linhaAutoria, registrarAutoria } = require('../autoria')
+const { version } = require('../package.json')
 
 test('período vira 01MM 30MM', () => {
   assert.equal(codigosPeriodo('2026-05'), '0105 3005')
@@ -40,4 +42,23 @@ test('origens permitidas', () => {
   assert.equal(origemPermitida('https://warefly.exemplo.com', ['https://warefly.exemplo.com']), true)
   assert.equal(origemPermitida('https://site-qualquer.com', []), false)
   assert.equal(origemPermitida(undefined, []), true)
+})
+
+test('autoria do conector', () => {
+  assert.equal(
+    linhaAutoria(),
+    `Warefly · conector v${version} · Desenvolvido por Matheus De Oliveira Galdino, 2026 · devmatheus94@gmail.com`,
+  )
+  const saida = []
+  const linha = registrarAutoria('Requisição de material no GDIS', new Date('2026-10-14T17:40:00Z'), (l) => saida.push(l))
+  assert.deepEqual(saida, [linha])
+  assert.match(linha, /^\[autoria\] 14\/10\/2026,? 14:40:00 · Requisição de material no GDIS · Warefly · conector v/)
+})
+
+test('quadro de abertura traz a assinatura', () => {
+  const quadro = bannerInicio(3335)
+  assert.match(quadro, /║ {3}Desenvolvido por Matheus Galdino +║/)
+  assert.match(quadro, /http:\/\/localhost:3335/)
+  const linhas = quadro.split('\n').filter((l) => /^[╔║╚]/.test(l))
+  assert.ok(linhas.every((l) => l.length === linhas[0].length), 'todas as linhas do quadro com a mesma largura')
 })

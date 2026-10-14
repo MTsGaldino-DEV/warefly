@@ -1,0 +1,127 @@
+/* Guia do despacho (A4). Na tela: folha sobre um véu. Na impressão: só a folha. Só tokens do design system. */
+
+.guia-portal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background: var(--veu);
+  font-family: var(--fonte);
+  color: var(--texto);
+}
+.guia-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-8);
+  padding: var(--esp-7) var(--esp-11);
+  background: var(--vidro);
+  backdrop-filter: var(--desfoque-vidro);
+  -webkit-backdrop-filter: var(--desfoque-vidro);
+  box-shadow: var(--sombra-suave);
+}
+.guia-barra > div:first-child { display: flex; flex-direction: column; gap: var(--esp-1); }
+.guia-barra strong { font-size: var(--tam-h2); font-weight: var(--peso-medio); }
+.guia-barra span { font-size: var(--tam-legenda); color: var(--texto-2); }
+.guia-barra-acoes { display: flex; gap: var(--esp-4); }
+.guia-botao {
+  min-height: 40px;
+  padding: 0 var(--esp-9);
+  border-radius: 11px;
+  border: 1px solid var(--borda);
+  background: var(--superficie-elevada);
+  color: var(--cor-estrutura);
+  font: var(--peso-forte) var(--tam-botao) var(--fonte);
+  cursor: pointer;
+}
+.guia-botao.primario { border-color: transparent; background: var(--cor-marca); color: var(--acao-texto); }
+.guia-botao.primario:hover { background: var(--marca-hover); }
+.guia-rolagem { flex: 1; overflow: auto; padding: var(--esp-11); display: flex; justify-content: center; }
+
+.guia-folha {
+  width: 210mm;
+  min-height: 297mm;
+  flex: none;
+  box-sizing: border-box;
+  padding: 14mm 14mm 12mm;
+  display: flex;
+  flex-direction: column;
+  gap: 6mm;
+  background: var(--superficie-elevada);
+  border-radius: var(--esp-2);
+  box-shadow: var(--sombra-flutuante);
+  font-size: 10pt;
+  line-height: 1.35;
+}
+.guia-folha .mono { font-family: var(--fonte-mono); }
+.guia-folha .sec { color: var(--texto-2); }
+.guia-sobrelinha { font-size: 7.5pt; font-weight: var(--peso-forte); letter-spacing: .08em; text-transform: uppercase; color: var(--texto-2); }
+
+.guia-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 8mm; padding-bottom: 5mm; border-bottom: 2px solid var(--cor-estrutura); }
+.guia-marca { display: flex; align-items: center; gap: 3.5mm; }
+.guia-logo { display: grid; place-items: center; width: 13mm; height: 13mm; }
+.guia-marca > div:last-child { display: flex; flex-direction: column; gap: .5mm; }
+.guia-marca strong { font-size: 15pt; font-weight: 800; letter-spacing: -0.01em; color: var(--cor-estrutura); }
+.guia-marca span { font-size: 8.5pt; color: var(--texto-2); }
+.guia-numero { display: flex; flex-direction: column; align-items: flex-end; gap: .8mm; text-align: right; }
+.guia-numero strong { font-family: var(--fonte-mono); font-size: 17pt; font-weight: var(--peso-forte); letter-spacing: -0.01em; color: var(--cor-estrutura); }
+.guia-numero > span:last-child { font-size: 8.5pt; color: var(--texto-2); }
+
+.guia-rota { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 5mm; }
+.guia-ponta { display: flex; flex-direction: column; gap: .8mm; padding: 4mm 5mm; border-radius: var(--raio); background: var(--superficie); box-shadow: inset 0 0 0 1px var(--borda); }
+.guia-ponta strong { font-size: 12pt; font-weight: var(--peso-forte); color: var(--cor-estrutura); }
+.guia-ponta > span:last-child { font-size: 8.5pt; color: var(--texto-2); }
+.guia-seta { width: 14mm; height: 4mm; fill: none; stroke: var(--cor-estrutura); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+.guia-dados { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4mm; margin: 0; }
+.guia-dados div { display: flex; flex-direction: column; gap: 1mm; }
+.guia-dados dt { font-size: 7.5pt; font-weight: var(--peso-forte); letter-spacing: .06em; text-transform: uppercase; color: var(--texto-2); }
+.guia-dados dd { margin: 0; min-height: 6mm; padding-bottom: 1mm; border-bottom: 1px solid var(--borda-forte); font-weight: var(--peso-medio); }
+
+.guia-tabela { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+.guia-tabela th { padding: 2.2mm 2mm; text-align: left; font-size: 7.5pt; font-weight: var(--peso-forte); letter-spacing: .06em; text-transform: uppercase; color: var(--texto-2); background: var(--superficie-painel); }
+.guia-tabela th:first-child { border-radius: var(--raio-badge) 0 0 var(--raio-badge); }
+.guia-tabela th:last-child { border-radius: 0 var(--raio-badge) var(--raio-badge) 0; }
+.guia-tabela td { padding: 2.6mm 2mm; border-bottom: 1px solid var(--borda-forte); vertical-align: middle; }
+.guia-tabela .num { text-align: right; font-variant-numeric: tabular-nums; }
+.guia-tabela .forte { font-weight: var(--peso-forte); }
+.guia-tabela td.guia-preencher { min-width: 18mm; box-shadow: inset 0 -1px 0 var(--borda-forte); }
+.guia-tabela th:nth-child(6) { text-align: right; }
+.guia-tabela td:nth-child(7) { width: 30%; }
+.guia-total { margin: -3mm 0 0; font-size: 8.5pt; color: var(--texto-2); text-align: right; }
+
+.guia-aviso { padding: 3.5mm 4.5mm; border-radius: var(--raio); background: var(--st-transito-fundo); color: var(--st-transito-texto); font-size: 8.8pt; }
+.guia-aviso strong { font-weight: var(--peso-forte); }
+
+.guia-assinaturas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6mm; margin-top: auto; }
+.guia-assinatura { display: flex; flex-direction: column; gap: 4mm; padding: 4.5mm 5mm 4mm; border-radius: var(--raio); box-shadow: inset 0 0 0 1px var(--borda-forte); }
+.guia-assinatura-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 3mm; }
+.guia-assinatura-cab strong { font-size: 10.5pt; font-weight: var(--peso-forte); color: var(--cor-estrutura); }
+.guia-assinatura-cab span { font-size: 8.5pt; color: var(--texto-2); }
+.guia-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 3.5mm 4mm; }
+.guia-campos > div:first-child { grid-column: 1 / -1; }
+.guia-campos div { display: flex; flex-direction: column; gap: 1mm; }
+.guia-campos span, .guia-linha-assinatura span { font-size: 7.5pt; font-weight: var(--peso-forte); letter-spacing: .06em; text-transform: uppercase; color: var(--texto-2); }
+.guia-campos i { display: block; min-height: 6mm; border-bottom: 1px solid var(--borda-forte); font-style: normal; font-size: 9.5pt; font-weight: var(--peso-medio); }
+.guia-linha-assinatura { display: flex; flex-direction: column; align-items: center; gap: 1mm; margin-top: 6mm; }
+.guia-linha-assinatura i { display: block; width: 100%; border-bottom: 1px solid var(--cor-estrutura); }
+
+.guia-rodape { display: flex; justify-content: space-between; padding-top: 3mm; border-top: 1px solid var(--borda); font-size: 7.5pt; color: var(--texto-3); }
+
+.guia-seriais { display: block; margin-top: .8mm; font-size: 7.5pt; color: var(--texto-2); line-height: 1.35; word-break: break-word; }
+.guia-tabela.retirada td:nth-child(3) { width: 60%; }
+.guia-observacao { margin: -2mm 0 0; font-size: 9pt; }
+
+@media print {
+  @page { size: A4; margin: 0; }
+  body.com-guia { background: var(--superficie-elevada); }
+  body.com-guia #root { display: none !important; }
+  body.com-guia .guia-portal { position: static; display: block; background: none; }
+  .guia-barra { display: none !important; }
+  .guia-rolagem { display: block; overflow: visible; padding: 0; }
+  .guia-folha { width: 210mm; min-height: 296mm; border-radius: 0; box-shadow: none; transform: none !important; opacity: 1 !important; }
+  .guia-folha, .guia-folha * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .guia-tabela tr { break-inside: avoid; }
+  .guia-assinaturas { break-inside: avoid; }
+}

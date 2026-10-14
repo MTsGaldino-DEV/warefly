@@ -178,37 +178,67 @@ select lives_ok($$ insert into motivos_reducao (descricao, ordem) values ('Mater
 reset role;
 
 -- ---------------------------------------------------------------------
--- F. Equipes: por base, mantidas pelo supervisor da base, pela gestão e
---    pelo admin; não são apagadas
+-- F. Equipes: cadastro só pela gestão do almoxarifado, tudo obrigatório,
+--    locais liberados por equipe; não são apagadas
 -- ---------------------------------------------------------------------
+-- Começa sem a carga inicial das equipes reais
+delete from equipe_locais;
+delete from equipes;
+
 -- id da equipe pelo nome, sem passar pelo RLS de quem consulta
 create function tests.equipe(p_nome text) returns uuid language sql stable security definer as $$
   select id from public.equipes where nome = p_nome
 $$;
-grant execute on function tests.equipe(text) to authenticated;
+create function tests.grupo(p_nome text) returns uuid language sql stable security definer as $$
+  select id from public.grupos where nome = p_nome
+$$;
+create function tests.locais(p_nome text) returns text[] language sql stable security definer as $$
+  select array_agg(a.codigo order by a.codigo)
+    from public.equipe_locais el join public.almoxarifados a on a.id = el.almox_id
+   where el.equipe_id = tests.equipe(p_nome)
+$$;
+grant execute on all functions in schema tests to authenticated;
 
 select tests.como('VICTOR');
-select lives_ok($$ insert into equipes (almox_id, nome) values (tests.a('MNT'), 'Equipe 12') $$, 'supervisor cadastra equipe da própria base');
-select throws_ok($$ insert into equipes (almox_id, nome) values (tests.a('MNT'), 'EQUIPE 12') $$, '23505', null, 'nome repetido na base, mesmo com outra caixa');
-select throws_ok($$ insert into equipes (almox_id, nome) values (tests.a('MNT'), 'Equipe 13 ') $$, '23514', null, 'nome com espaço sobrando é recusado');
-select throws_ok($$ insert into equipes (almox_id, nome) values (tests.a('RSP'), 'Equipe 1') $$, '42501', null, 'supervisor não cadastra equipe em base de outro');
+select throws_ok($$ insert into equipes (nome) values ('Equipe 12') $$, '42501', null, 'equipe não é gravada direto na tabela');
+select throws_ok($$ select rpc_salvar_equipe(90012, 'Equipe 12', 'Integrante A', '1000', tests.grupo('Victor')) $$,
+  '42501', null, 'supervisor não cadastra equipe');
 select throws_ok($$ delete from equipes $$, '42501', null, 'equipe não é apagada');
 reset role;
-select is((select criado_por from equipes where nome = 'Equipe 12'), tests.u('VICTOR'), 'equipe guarda quem cadastrou');
 
 select tests.como('GESTORA');
-select lives_ok($$ insert into equipes (almox_id, nome) values (tests.a('ITB'), 'Equipe 7') $$, 'gestora cadastra equipe numa base do 211');
-select throws_like($$ insert into equipes (almox_id, nome) values (tests.a('211'), 'Equipe do 211') $$,
-  'Equipe é cadastrada em uma base%', 'equipe não fica no 211');
-select throws_ok($$ insert into equipes (almox_id, nome) values (tests.a('B2'), 'Equipe B') $$, '42501', null, 'gestora não cadastra equipe em base de outro regional');
+select lives_ok($$ select rpc_salvar_equipe(90012, '  Equipe   12 ', 'Integrante A/Integrante B', '1000', tests.grupo('Victor')) $$,
+  'gestora cadastra equipe com tudo preenchido');
+select throws_like($$ select rpc_salvar_equipe(null, 'Equipe 13', 'Integrante C', '1001', tests.grupo('Victor')) $$,
+  'Informe o código Zeus da equipe.', 'Zeus obrigatório');
+select throws_like($$ select rpc_salvar_equipe(90013, ' ', 'Integrante C', '1001', tests.grupo('Victor')) $$,
+  'Informe a descrição da equipe.', 'descrição obrigatória');
+select throws_like($$ select rpc_salvar_equipe(90013, 'Equipe 13', '  ', '1001', tests.grupo('Victor')) $$,
+  'Informe os integrantes da equipe.', 'integrantes obrigatórios');
+select throws_like($$ select rpc_salvar_equipe(90013, 'Equipe 13', 'Integrante C', null, tests.grupo('Victor')) $$,
+  'Informe a frota da equipe.', 'frota obrigatória');
+select throws_like($$ select rpc_salvar_equipe(90013, 'Equipe 13', 'Integrante C', '1001', null) $$,
+  'Escolha o grupo (supervisor) da equipe.', 'grupo obrigatório');
+select throws_like($$ select rpc_salvar_equipe(90012, 'Outra', 'Integrante C', '1001', tests.grupo('Victor')) $$,
+  'Já existe uma equipe com o código Zeus 90012.', 'Zeus repetido');
+select lives_ok($$ select rpc_salvar_equipe(90007, 'Equipe 7', 'Integrante D', '1007', tests.grupo('Victor'), array[tests.a('ITB')]) $$,
+  'gestora escolhe os locais no cadastro');
+select throws_ok($$ select rpc_salvar_equipe(90099, 'Equipe B', 'Integrante E', '1099', tests.grupo('Victor'), array[tests.a('B2')]) $$,
+  '42501', null, 'gestora não libera base de outro regional');
 reset role;
 
+select is((select nome from equipes where codigo_zeus = 90012), 'Equipe 12', 'descrição sem espaços sobrando');
+select is((select criado_por from equipes where nome = 'Equipe 12'), tests.u('GESTORA'), 'equipe guarda quem cadastrou');
+select is(tests.locais('Equipe 12'), array['211', 'CRC', 'ITB', 'MNT'], 'equipe nova nasce com os locais do grupo');
+select is(tests.locais('Equipe 7'), array['ITB'], 'ou com os locais escolhidos');
+
 select tests.como('ADMIN');
-select lives_ok($$ insert into equipes (almox_id, nome) values (tests.a('B2'), 'Equipe B') $$, 'admin cadastra equipe em qualquer base');
+select lives_ok($$ select rpc_salvar_equipe(90099, 'Equipe B', 'Integrante E', '1099', tests.grupo('Victor'), array[tests.a('B2')]) $$,
+  'admin libera qualquer local');
 reset role;
 
 select tests.como('VICTOR');
-select is((select count(*) from equipes)::int, 2, 'supervisor vê só as equipes das próprias bases');
+select is((select count(*) from equipes)::int, 2, 'supervisor vê só as equipes liberadas nas bases dele');
 reset role;
 
 -- ---------------------------------------------------------------------
@@ -225,7 +255,7 @@ select throws_like(
 select throws_like(
   $$ select rpc_registrar_saida(tests.a('MNT'), '[{"material_id":"10000000-0000-4000-a000-0000000000e1","quantidade":1}]',
        'aplicacao', null, null, null, null, tests.equipe('Equipe 7'), 'João') $$,
-  'A equipe Equipe 7 não é de Mantena.', 'equipe de outra base é recusada');
+  'A equipe 90007 (Equipe 7) não está liberada para retirar em Mantena.%', 'equipe não liberada no local é recusada');
 select lives_ok(
   $$ select rpc_registrar_saida(tests.a('MNT'), '[{"material_id":"10000000-0000-4000-a000-0000000000e1","quantidade":2}]',
        'aplicacao', null, null, 'NS 4455', null, tests.equipe('Equipe 12'), '  João Silva ') $$,
@@ -234,33 +264,45 @@ select lives_ok(
   $$ select rpc_registrar_saida(tests.a('MNT'), '[{"material_id":"10000000-0000-4000-a000-0000000000e1","quantidade":1}]',
        'perda', null, 'Caiu do caminhão') $$,
   'perda não exige equipe');
+select throws_ok($$ select rpc_ativar_equipe(tests.equipe('Equipe 12'), false) $$, '42501', null, 'supervisor não inativa equipe');
 reset role;
 select is((select retirado_por_nome from saidas where observacao = 'NS 4455'), 'João Silva', 'nome gravado sem espaços sobrando');
 select is((select equipe_id from saidas where observacao = 'NS 4455'), tests.equipe('Equipe 12'), 'equipe gravada na saída');
 select is(tests.saldo('MNT'), 17.000, 'saídas baixaram o saldo (20 − 2 − 1)');
 
+select tests.como('GESTORA');
+select lives_ok($$ select rpc_salvar_equipe(90012, 'Equipe 12 nova', 'Integrante A/Integrante B', '1000', tests.grupo('Victor'), null, true, tests.equipe('Equipe 12')) $$,
+  'equipe usada pode mudar de descrição');
+select throws_like($$ select rpc_salvar_equipe(90112, 'Equipe 12 nova', 'Integrante A/Integrante B', '1000', tests.grupo('Victor'), null, true, tests.equipe('Equipe 12 nova')) $$,
+  'A equipe 90012 (Equipe 12 nova) já tem saídas registradas e não pode mudar de código Zeus.', 'mas não de código Zeus');
+select lives_ok($$ select rpc_ativar_equipe(tests.equipe('Equipe 12 nova'), false) $$, 'gestora inativa equipe usada');
+reset role;
+
 select tests.como('VICTOR');
-select throws_like($$ update equipes set nome = 'Equipe 12A' where nome = 'Equipe 12' $$,
-  'A equipe Equipe 12 já tem saídas registradas%', 'equipe usada não muda de nome');
-select lives_ok($$ update equipes set ativa = false where nome = 'Equipe 12' $$, 'equipe usada pode ser inativada');
 select throws_like(
   $$ select rpc_registrar_saida(tests.a('MNT'), '[{"material_id":"10000000-0000-4000-a000-0000000000e1","quantidade":1}]',
-       'aplicacao', null, null, null, null, tests.equipe('Equipe 12'), 'João') $$,
-  'A equipe Equipe 12 está inativa%', 'equipe inativa é recusada');
+       'aplicacao', null, null, null, null, tests.equipe('Equipe 12 nova'), 'João') $$,
+  'A equipe 90012 (Equipe 12 nova) está inativa%', 'equipe inativa é recusada');
 reset role;
 
 select tests.como('GESTORA');
+select throws_like(
+  $$ select rpc_registrar_saida(tests.a('211'), '[{"material_id":"10000000-0000-4000-a000-0000000000e1","quantidade":1}]',
+       'aplicacao', null, null, null, null, tests.equipe('Equipe 7'), 'Pedro') $$,
+  'A equipe 90007 (Equipe 7) não está liberada para retirar em Almoxarifado regional.%', 'equipe sem o 211 liberado não retira lá');
+select lives_ok($$ select rpc_definir_locais_equipe(tests.equipe('Equipe 7'), array[tests.a('ITB'), tests.a('211')]) $$,
+  'gestora libera o 211 para a equipe');
 select lives_ok(
   $$ select rpc_registrar_saida(tests.a('211'), '[{"material_id":"10000000-0000-4000-a000-0000000000e1","quantidade":1}]',
        'aplicacao', null, null, null, null, tests.equipe('Equipe 7'), 'Pedro') $$,
-  'saída no 211 para equipe de uma base do 211');
+  'e a equipe retira no 211');
 select lives_ok(
   $$ select rpc_registrar_saida(tests.a('211'), '[{"material_id":"10000000-0000-4000-a000-0000000000e1","quantidade":1}]') $$,
   'no 211 a equipe é opcional');
 select throws_like(
   $$ select rpc_registrar_saida(tests.a('211'), '[{"material_id":"10000000-0000-4000-a000-0000000000e1","quantidade":1}]',
        'aplicacao', null, null, null, null, tests.equipe('Equipe B'), 'Pedro') $$,
-  'A equipe Equipe B não é de Almoxarifado regional.', 'equipe de base de outro regional é recusada');
+  'A equipe 90099 (Equipe B) não está liberada%', 'equipe liberada só em outro regional é recusada');
 reset role;
 
 select * from finish();

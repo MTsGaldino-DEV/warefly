@@ -3,6 +3,10 @@ services:
     build:
       context: .
       dockerfile: app/Dockerfile
+      # Commit no pé do login. No PowerShell:
+      #   $env:WAREFLY_COMMIT = git rev-parse --short HEAD; docker compose up -d --build
+      args:
+        WAREFLY_COMMIT: ${WAREFLY_COMMIT:-}
     image: warefly-app
     container_name: warefly
     ports:

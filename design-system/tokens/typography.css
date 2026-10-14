@@ -1,24 +1,28 @@
 :root {
-  --fonte: 'Barlow', system-ui, sans-serif; /* @kind font */
+  --fonte: 'Manrope', system-ui, sans-serif; /* @kind font */
   --fonte-mono: 'IBM Plex Mono', ui-monospace, monospace; /* @kind font */
 
-  --tam-h1: 1.5rem;     /* 24px, 600 */
-  --tam-h2: 1.15rem;    /* 18.4px, 600 */
-  --tam-h3: 1rem;       /* 16px, 600 */
-  --tam-corpo: 1rem;    /* 16px, lh 1.45 */
-  --tam-botao: 0.95rem;
-  --tam-tabela: 0.92rem;
-  --tam-peq: 0.875rem;
-  --tam-legenda: 0.85rem;
-  --tam-badge: 0.78rem;
-  --tam-th: 0.78rem;    /* caixa-alta, 0.04em */
-  --tam-grupo-menu: 0.7rem; /* caixa-alta, 0.08em */
-  --tam-etiqueta: 1.9rem;   /* mono 400, lh 1.1 */
-  --tam-sigla: 1.35rem;     /* 600, 0.06em */
+  --tam-display: 1.875rem; /* 30px, 400, −0.02em — título da página */
+  --tam-kpi: 1.75rem;      /* 28px, 400, −0.02em — número de indicador */
+  --tam-h1: 1.875rem;   /* 30px, 400 */
+  --tam-h2: 0.875rem;   /* 14px, 500 — título de cartão/painel */
+  --tam-h3: 0.8125rem;  /* 13px, 500 */
+  --tam-corpo: 0.875rem;  /* 14px, lh 1.45 */
+  --tam-botao: 0.8125rem; /* 13px, 600 */
+  --tam-tabela: 0.75rem;  /* 12px */
+  --tam-peq: 0.8125rem;
+  --tam-legenda: 0.75rem;
+  --tam-badge: 0.6875rem; /* 11px, 600 */
+  --tam-th: 0.6875rem;    /* 11px, 500, sem caixa-alta */
+  --tam-grupo-menu: 0.6875rem; /* caixa-alta, 0.06em */
+  --tam-etiqueta: 1.75rem;     /* 400, lh 1 */
+  --tam-sigla: 1.35rem;        /* 600, 0.06em */
 
+  --peso-leve: 300; /* @kind font */
   --peso-regular: 400; /* @kind font */
   --peso-medio: 500; /* @kind font */
   --peso-forte: 600; /* @kind font */
   --altura-linha: 1.45; /* @kind font */
-  --altura-titulo: 1.2; /* @kind font */
+  --altura-titulo: 1.1; /* @kind font */
+  --espacamento-titulo: -0.02em; /* @kind font */
 }

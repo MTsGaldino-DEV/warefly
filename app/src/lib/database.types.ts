@@ -287,39 +287,91 @@ export type Database = {
           },
         ]
       }
-      equipes: {
+      equipe_locais: {
         Row: {
           almox_id: string
-          ativa: boolean
-          criado_em: string
-          criado_por: string | null
-          id: string
-          nome: string
+          equipe_id: string
+          liberado_em: string
+          liberado_por: string | null
         }
         Insert: {
           almox_id: string
-          ativa?: boolean
-          criado_em?: string
-          criado_por?: string | null
-          id?: string
-          nome: string
+          equipe_id: string
+          liberado_em?: string
+          liberado_por?: string | null
         }
         Update: {
           almox_id?: string
-          ativa?: boolean
-          criado_em?: string
-          criado_por?: string | null
-          id?: string
-          nome?: string
+          equipe_id?: string
+          liberado_em?: string
+          liberado_por?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "equipes_almox_id_fkey"
+            foreignKeyName: "equipe_locais_almox_id_fkey"
             columns: ["almox_id"]
             isOneToOne: false
             referencedRelation: "almoxarifados"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "equipe_locais_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipe_locais_liberado_por_fkey"
+            columns: ["liberado_por"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipe_locais_liberado_por_fkey"
+            columns: ["liberado_por"]
+            isOneToOne: false
+            referencedRelation: "v_usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipes: {
+        Row: {
+          ativa: boolean
+          codigo_zeus: number | null
+          criado_em: string
+          criado_por: string | null
+          frota: string | null
+          grupo_id: string | null
+          id: string
+          integrantes: string | null
+          nome: string
+        }
+        Insert: {
+          ativa?: boolean
+          codigo_zeus?: number | null
+          criado_em?: string
+          criado_por?: string | null
+          frota?: string | null
+          grupo_id?: string | null
+          id?: string
+          integrantes?: string | null
+          nome: string
+        }
+        Update: {
+          ativa?: boolean
+          codigo_zeus?: number | null
+          criado_em?: string
+          criado_por?: string | null
+          frota?: string | null
+          grupo_id?: string | null
+          id?: string
+          integrantes?: string | null
+          nome?: string
+        }
+        Relationships: [
           {
             foreignKeyName: "equipes_criado_por_fkey"
             columns: ["criado_por"]
@@ -334,7 +386,71 @@ export type Database = {
             referencedRelation: "v_usuarios"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "equipes_grupo_id_fkey"
+            columns: ["grupo_id"]
+            isOneToOne: false
+            referencedRelation: "grupos"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      grupo_locais: {
+        Row: {
+          almox_id: string
+          grupo_id: string
+        }
+        Insert: {
+          almox_id: string
+          grupo_id: string
+        }
+        Update: {
+          almox_id?: string
+          grupo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grupo_locais_almox_id_fkey"
+            columns: ["almox_id"]
+            isOneToOne: false
+            referencedRelation: "almoxarifados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grupo_locais_grupo_id_fkey"
+            columns: ["grupo_id"]
+            isOneToOne: false
+            referencedRelation: "grupos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      grupos: {
+        Row: {
+          ativo: boolean
+          chave_planilha: string | null
+          criado_em: string
+          id: string
+          nome: string
+          tipo_equipe: Database["public"]["Enums"]["tipo_equipe"]
+        }
+        Insert: {
+          ativo?: boolean
+          chave_planilha?: string | null
+          criado_em?: string
+          id?: string
+          nome: string
+          tipo_equipe?: Database["public"]["Enums"]["tipo_equipe"]
+        }
+        Update: {
+          ativo?: boolean
+          chave_planilha?: string | null
+          criado_em?: string
+          id?: string
+          nome?: string
+          tipo_equipe?: Database["public"]["Enums"]["tipo_equipe"]
+        }
+        Relationships: []
       }
       materiais: {
         Row: {
@@ -1377,10 +1493,15 @@ export type Database = {
         }[]
       }
       fn_pode_ver: { Args: { p_almox_id: string }; Returns: boolean }
+      fn_pode_ver_equipe: { Args: { p_equipe_id: string }; Returns: boolean }
       fn_pode_ver_foto: { Args: { p_nome: string }; Returns: boolean }
       fn_pode_ver_remessa: { Args: { p_remessa_id: string }; Returns: boolean }
       rpc_aprovar_pedido: {
         Args: { p_itens: Json; p_pedido_id: string }
+        Returns: undefined
+      }
+      rpc_ativar_equipe: {
+        Args: { p_ativa: boolean; p_equipe_id: string }
         Returns: undefined
       }
       rpc_cancelar_pedido: {
@@ -1400,6 +1521,10 @@ export type Database = {
         }
         Returns: string
       }
+      rpc_definir_locais_equipe: {
+        Args: { p_equipe_id: string; p_locais: string[] }
+        Returns: undefined
+      }
       rpc_enviar_pedido: { Args: { p_pedido_id: string }; Returns: undefined }
       rpc_enviar_remessa_pedido: {
         Args: {
@@ -1410,6 +1535,10 @@ export type Database = {
           p_pedido_id: string
         }
         Returns: string
+      }
+      rpc_importar_equipes: {
+        Args: { p_linhas: Json; p_simular?: boolean }
+        Returns: Json
       }
       rpc_registrar_ajuste: {
         Args: {
@@ -1461,6 +1590,30 @@ export type Database = {
         }
         Returns: string
       }
+      rpc_salvar_equipe: {
+        Args: {
+          p_ativa?: boolean
+          p_codigo_zeus: number
+          p_frota: string
+          p_grupo_id: string
+          p_id?: string
+          p_integrantes: string
+          p_locais?: string[]
+          p_nome: string
+        }
+        Returns: string
+      }
+      rpc_salvar_grupo: {
+        Args: {
+          p_ativo?: boolean
+          p_chave_planilha?: string
+          p_id?: string
+          p_locais: string[]
+          p_nome: string
+          p_tipo_equipe: Database["public"]["Enums"]["tipo_equipe"]
+        }
+        Returns: string
+      }
       rpc_tratar_divergencia: {
         Args: {
           p_data_ocorrencia?: string
@@ -1488,6 +1641,7 @@ export type Database = {
       status_remessa: "em_transito" | "com_divergencia" | "encerrada"
       tipo_ajuste: "implantacao" | "inventario"
       tipo_almox: "externo" | "regional" | "base"
+      tipo_equipe: "multifuncional" | "moto"
       tipo_movimentacao:
         | "saldo_inicial"
         | "envio_remessa"
@@ -1652,6 +1806,7 @@ export const Constants = {
       status_remessa: ["em_transito", "com_divergencia", "encerrada"],
       tipo_ajuste: ["implantacao", "inventario"],
       tipo_almox: ["externo", "regional", "base"],
+      tipo_equipe: ["multifuncional", "moto"],
       tipo_movimentacao: [
         "saldo_inicial",
         "envio_remessa",

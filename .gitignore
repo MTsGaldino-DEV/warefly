@@ -25,3 +25,9 @@ supabase/.temp
 # Playwright
 app/test-results/
 app/playwright-report/
+
+# Telas do GDIS (Cemig), só referência local
+/*.jsp
+
+# Cópia de outro conector, só referência local
+docs/referencia/

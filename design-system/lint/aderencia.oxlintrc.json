@@ -44,8 +44,8 @@
         "message": "Raw px value — use a design-system spacing token via var()."
       },
       {
-        "selector": "Literal[value=/font-family\\s*:\\s*(?!['\\\"]?(?:Barlow|IBM Plex Mono))/i]",
-        "message": "Font not provided by the design system. Available: Barlow, IBM Plex Mono."
+        "selector": "Literal[value=/font-family\\s*:\\s*(?!['\\\"]?(?:Manrope|IBM Plex Mono))/i]",
+        "message": "Font not provided by the design system. Available: Manrope, IBM Plex Mono."
       },
       {
         "selector": "JSXOpeningElement[name.name='Abas'] > JSXAttribute > JSXIdentifier[name!=/^(?:abas|ativa|onChange|key|ref|className|style|children)$/]",

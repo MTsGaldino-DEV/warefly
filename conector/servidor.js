@@ -10,6 +10,7 @@ const cors = require('cors')
 const { origemPermitida } = require('./origens')
 const { validarPedido } = require('./validacao')
 const { criarSessao, Recusado } = require('./sessao')
+const { AUTORIA, bannerInicio, registrarAutoria } = require('./autoria')
 
 const PORTA = 3335 // 3333 é do Visão de Dono e 3334 do TraceOne
 
@@ -55,7 +56,7 @@ const sessao = criarSessao({ emitir })
 
 /** Estado completo, para a aba se recuperar ao abrir ou recarregar. */
 app.get('/ping', (req, res) => {
-  res.json({ ok: true, ...sessao.estado() })
+  res.json({ ok: true, ...sessao.estado(), autoria: AUTORIA })
 })
 
 function responderErro(res, err) {
@@ -92,6 +93,7 @@ app.post('/requisicao-material', (req, res) => {
   }
   try {
     void sessao.iniciarTarefa(pedido)
+    registrarAutoria('Requisição de material no GDIS')
     res.json({ ok: true, total: pedido.itens.length })
   } catch (err) {
     responderErro(res, err)
@@ -104,13 +106,5 @@ app.post('/cancelar', (req, res) => {
 })
 
 app.listen(PORTA, () => {
-  console.log('')
-  console.log('╔══════════════════════════════════════════════╗')
-  console.log('║   Conector Warefly × GDIS                    ║')
-  console.log(`║   Rodando em http://localhost:${PORTA}           ║`)
-  console.log('║                                              ║')
-  console.log('║   Deixe esta janela aberta enquanto usa.     ║')
-  console.log('║   Para parar: Ctrl + C                       ║')
-  console.log('╚══════════════════════════════════════════════╝')
-  console.log('')
+  console.log(bannerInicio(PORTA))
 })

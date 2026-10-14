@@ -1,7 +1,7 @@
 import type { Session } from '@supabase/supabase-js'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { mensagemErro } from '../lib/erros'
-import { basesComEquipes, locaisGeridos, regionaisGeridos, rotuloDoPerfil } from '../lib/perfis'
+import { locaisGeridos, regionaisGeridos, rotuloDoPerfil } from '../lib/perfis'
 import { comRetentativa } from '../lib/retentativa'
 import { supabase, type Almox, type Atribuicao, type Perfil } from '../lib/supabase'
 
@@ -25,8 +25,10 @@ type Sessao = {
   ehGestora: boolean
   /** locais cujo estoque o usuário ajusta: admin, todos; gestora, o regional e as bases dele */
   almoxGeridos: Almox[]
-  /** bases cujas equipes o usuário mantém */
-  basesEquipes: Almox[]
+  /** gestão do almoxarifado ou admin: cadastram equipes e liberam locais */
+  mantemEquipes: boolean
+  /** vê a lista de equipes: quem mantém, a gerência e quem é de alguma base */
+  veEquipes: boolean
   /** rótulo do perfil no rodapé do menu */
   rotuloPerfil: string
   almox:(id: string | null | undefined) => Almox | undefined
@@ -118,7 +120,8 @@ export function SessaoProvider({ children }: { children: ReactNode }) {
         : operaveis.filter((a) => idsAtrib.has(a.id) || (a.pai_id !== null && idsResp.has(a.pai_id))),
       ehGestora,
       almoxGeridos: locaisGeridos(almoxarifados, minhas, ehAdmin),
-      basesEquipes: basesComEquipes(almoxarifados, minhas, ehAdmin),
+      mantemEquipes: ehGestora || ehAdmin,
+      veEquipes: veTudo || ehGestora || operaveis.some((a) => a.tipo === 'base' && idsAtrib.has(a.id)),
       rotuloPerfil: rotuloDoPerfil({ papel: perfil?.papel, ehGestora, ehSupervisor: minhas.some((a) => a.funcao === 'supervisor') }),
       almox: (id) => (id ? porId.get(id) : undefined),
       recarregarPerfil,

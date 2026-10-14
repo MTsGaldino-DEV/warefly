@@ -1,9 +1,17 @@
 import { expect, test } from '@playwright/test'
-import { entrar } from './apoio'
+import { abrirConta, entrar } from './apoio'
 
-test('admin abre a automação e vê o conector desligado', async ({ page }) => {
+test('admin abre Administração → Automações e vê o conector desligado', async ({ page }) => {
   await entrar(page, 'admin')
-  await page.getByRole('link', { name: 'Solicitar material no GDIS' }).click()
+  await abrirConta(page)
+  await page.getByRole('button', { name: 'Administração' }).click()
+  await expect(page).toHaveURL(/\/admin\/automacoes$/)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Automações')
+  await expect(page.getByRole('navigation', { name: 'Administração' }).getByRole('link', { name: 'Automações' })).toHaveAttribute('aria-current', 'page')
+  await expect(page.getByText('Fluxo em definição')).toBeVisible()
+
+  await page.getByRole('link', { name: 'Abrir Solicitar material no GDIS' }).click()
+  await expect(page).toHaveURL(/\/admin\/automacoes\/requisicao-material$/)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Solicitar material no GDIS')
   await expect(page.getByText('Conector desligado.')).toBeVisible()
   await expect(page.getByText('REQUISICAO DE MATERIAIS DE MANUTENCAO PARA O PERIODO')).toBeVisible()
@@ -17,9 +25,17 @@ test('admin abre a automação e vê o conector desligado', async ({ page }) => 
   await expect(page.getByRole('row', { name: /123456/ })).toContainText('fora do catálogo')
 })
 
-test('quem não é admin não vê a automação', async ({ page }) => {
-  await entrar(page, 'gestao')
-  await expect(page.getByRole('link', { name: 'Solicitar material no GDIS' })).toHaveCount(0)
+test('endereço antigo da automação leva para a Administração', async ({ page }) => {
+  await entrar(page, 'admin')
   await page.goto('/automacao/requisicao-material')
+  await expect(page).toHaveURL(/\/admin\/automacoes\/requisicao-material$/)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Solicitar material no GDIS')
+})
+
+test('quem não é admin não vê a Administração', async ({ page }) => {
+  await entrar(page, 'gestao')
+  await abrirConta(page)
+  await expect(page.getByRole('button', { name: 'Administração' })).toHaveCount(0)
+  await page.goto('/admin/automacoes')
   await expect(page.getByText('Acesso restrito ao administrador.')).toBeVisible()
 })

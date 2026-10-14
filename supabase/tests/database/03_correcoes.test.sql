@@ -44,7 +44,10 @@ insert into atribuicoes (almox_id, usuario_id, funcao) values
 insert into materiais (id, codigo_sap, descricao, unidade) values
   ('10000000-0000-4000-a000-0000000000d1', '7001', 'PARAFUSO', 'PC'),
   ('10000000-0000-4000-a000-0000000000d2', '7002', 'CONECTOR', 'PC');
-insert into equipes (id, almox_id, nome) values ('20000000-0000-4000-a000-0000000000f1', tests.a('MNT'), 'Equipe 1');
+-- Equipe do grupo do supervisor de Mantena, liberada em Mantena
+insert into equipes (id, codigo_zeus, nome, integrantes, frota, grupo_id)
+values ('20000000-0000-4000-a000-0000000000f1', 90001, 'Equipe 1', 'Integrante A/Integrante B', '1000', (select id from grupos where nome = 'Victor'));
+insert into equipe_locais (equipe_id, almox_id) values ('20000000-0000-4000-a000-0000000000f1', tests.a('MNT'));
 
 -- ---------------------------------------------------------------------
 -- I4: implantação (re)carregável até a operação começar

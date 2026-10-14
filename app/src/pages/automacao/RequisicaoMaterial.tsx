@@ -141,7 +141,7 @@ export function RequisicaoMaterial() {
     <div className="pilha">
       <PaginaTopo
         titulo="Solicitar material no GDIS"
-        trilha={['Automação', 'Solicitar material no GDIS']}
+        trilha={[{ rotulo: 'Automações', para: '/admin/automacoes' }, 'Solicitar material no GDIS']}
         sub="Monta no GDIS a nota corretiva de requisição de material. O robô para antes de salvar: você revisa e clica em Salvar no GDIS."
       />
 

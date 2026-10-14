@@ -2,21 +2,28 @@
   --esp-1: 2px; --esp-2: 4px; --esp-3: 6px; --esp-4: 8px; --esp-5: 10px; --esp-6: 12px;
   --esp-7: 14px; --esp-8: 16px; --esp-9: 20px; --esp-10: 24px; --esp-11: 28px; --esp-12: 32px; --esp-13: 48px;
 
-  --raio: 6px;
+  --raio: 10px;           /* controles, botões, chips, pílulas do menu */
   --raio-fita: 2px;
-  --raio-folha: 12px;
+  --raio-badge: 6px;      /* badge sólido de status */
+  --raio-cartao: 16px;    /* cartões */
+  --raio-folha: 20px;     /* painel lateral, cartão sobre o mapa, folha móvel */
   --raio-pilula: 999px;
 
-  --borda-menu: 4px;        /* borda direita cobre do menu lateral */
-  --borda-barra: 3px;       /* borda superior cobre da barra inferior */
-  --borda-etiqueta: 6px;    /* borda esquerda da etiqueta de prateleira */
+  --borda-menu: 1px;
+  --borda-barra: 1px;
+  --borda-etiqueta: 0px;
 
-  --sombra-flutuante: 0 8px 24px color-mix(in srgb, var(--cor-estrutura) 18%, transparent);
+  --sombra-suave: 0 1px 2px rgba(17, 24, 39, .06), 0 4px 12px rgba(17, 24, 39, .05);  /* pílula ativa, chip ativo */
+  --sombra-flutuante: inset 0 1px 0 #ffffff, 0 12px 32px rgba(17, 24, 39, .12);       /* popover, resultados de busca */
+  --sombra-objeto: 0 2px 3px rgba(17, 24, 39, .08), 0 10px 22px rgba(17, 24, 39, .08); /* blocos do mapa */
+  --desfoque-vidro: blur(10px);
+  --transicao: 120ms ease-out; /* só cor, fundo e sombra; nada se move */
 
   --menu-largura: 232px;
   --barra-altura: 64px;
-  --conteudo-max: 1200px;
-  --controle-altura: 42px;
-  --controle-altura-peq: 32px;
+  --conteudo-max: 1440px;
+  --painel-lateral: 340px;
+  --controle-altura: 40px;
+  --controle-altura-peq: 36px;
   --ponto-quebra: 900px;
 }

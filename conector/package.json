@@ -2,6 +2,7 @@
   "name": "conector-warefly",
   "version": "2.0.0",
   "private": true,
+  "author": "Matheus De Oliveira Galdino <devmatheus94@gmail.com>",
   "description": "Conector local do Warefly: automações no GDIS pela rede interna",
   "main": "servidor.js",
   "scripts": {

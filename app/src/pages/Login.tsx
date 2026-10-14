@@ -4,6 +4,7 @@ import { useSessao } from '../auth/SessaoContext'
 import { Aviso, Campo, Marca } from '../components/ui'
 import { mensagemErro } from '../lib/erros'
 import { DOMINIO_LOGIN, emailDoUsuario } from '../lib/login'
+import { COMMIT, linhaRodape } from '../lib/sobre'
 import { supabase } from '../lib/supabase'
 
 export function Login() {
@@ -48,6 +49,7 @@ export function Login() {
         </button>
         <p className="sec peq">Sem acesso? Peça ao administrador do sistema.</p>
       </form>
+      <footer className="login-rodape">{linhaRodape(COMMIT)}</footer>
     </div>
   )
 }

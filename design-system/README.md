@@ -2,7 +2,9 @@
 
 Design system gerado no Claude Design e incorporado ao repositório em 30/09/2026. Reúne tokens, fontes, marca, 29 componentes React de referência, dois UI kits (desktop e celular), as páginas de referência visual e a config de lint de aderência.
 
-> **Situação.** Desde 30/09/2026 o produto se chama **Warefly** (antes SIA) e o app segue este design system: paleta azul (`--cor-marca: #1E66C9`, marinho `#0B2447`, névoa `#F3F6FA`), símbolo da asa, menu lateral claro, indicadores com mini-gráfico. [app/src/index.css](../app/src/index.css) importa `tokens/colors.css`, `tokens/typography.css` e `tokens/spacing.css` direto desta pasta, então mudar um token aqui muda o app. Os componentes daqui continuam sendo referência: o app tem as próprias versões em `app/src/components`, com a mesma API e o mesmo visual, mais os estados que o uso real pede (teclado, acessibilidade, dados do banco).
+> **Situação (v2, 13/10/2026).** Os valores dos tokens foram refeitos no estilo de painel operacional claro: fundo `#EEF1F4`, cartões `#F7F8FA` em camadas sobre painel `#E6E9ED`, azul `#2F6FE4` para ação, verde `#3DAA55` para operação, vermelho `#E5484D` para alerta, títulos quase pretos `#1F2328` em Manrope 400, menu em pílulas brancas. Os **nomes** dos tokens não mudaram e [app/src/index.css](../app/src/index.css) importa `tokens/colors.css`, `tokens/typography.css` e `tokens/spacing.css` direto desta pasta, então o app muda junto. Falta no app: trocar Barlow por Manrope no `<link>` do Google Fonts em `app/index.html`, e o layout novo (menu superior em pílulas, mapa do 211, cartões de solicitação expansíveis), que é código de tela. Referência visual da v2: canvas "Warefly — Painel do Almox" no Claude. Os `.jsx` de `components/`, as páginas de `referencia/` e o `_ds_bundle.js` ainda mostram a v1 até um novo export.
+
+> **v1 (30/09/2026).** Paleta azul (`--cor-marca: #1E66C9`, marinho `#0B2447`, névoa `#F3F6FA`), Barlow, símbolo da asa, menu lateral claro, indicadores com mini-gráfico.
 
 ## Estrutura
 
@@ -23,10 +25,10 @@ Não existe `DESIGN.md` (formato Google Labs/Stitch) neste design system. O expo
 
 | Arquivo | Conteúdo |
 |---|---|
-| `tokens/colors.css` | base (`--cor-marca`, `--cor-asa`, `--cor-estrutura`, `--cor-neutra`, `--cor-fundo`, séries `--cor-dado-2/3`), status `--st-{info,transito,ok,alerta,neutro}` com `-fundo` e `-texto`, derivados (superfície, bordas, menu, sombra do cartão, véu) e aliases semânticos (`--acao`, `--foco`, `--texto-titulo`…) |
-| `tokens/typography.css` | `--fonte` (Barlow), `--fonte-mono` (IBM Plex Mono), tamanhos `--tam-*`, pesos e alturas de linha |
-| `tokens/spacing.css` | escala `--esp-1` … `--esp-13` (2 a 48px), raios, bordas de marca, sombra flutuante, medidas de layout (menu 232px, barra 64px, conteúdo 1200px, controle 42/32px, quebra 900px) |
-| `tokens/fonts.css` | `@font-face` de Barlow 400/500/600 e IBM Plex Mono 400/500 apontando para `assets/fonts` |
+| `tokens/colors.css` | base (`--cor-marca`, `--cor-asa`, `--cor-estrutura`, `--cor-neutra`, `--cor-fundo`, séries `--cor-dado-2/3`), novos da v2 (`--cor-operacao`, `--cor-operacao-forte`, `--cor-confirmar`, `--superficie-painel`, `--superficie-elevada`, `--texto-3`, `--vidro`, `--cor-reserva`/`-forte` do 3256, `--cor-211`/`-forte`/`-suave` do 211 Geral no mapa), status `--st-{info,transito,atencao,ok,alerta,neutro}` (`atencao` = estoque próximo do mínimo) com `-fundo` e `-texto`, derivados (superfície, bordas, menu, sombra do cartão, véu) e aliases semânticos (`--acao`, `--foco`, `--texto-titulo`…) |
+| `tokens/typography.css` | `--fonte` (Manrope), `--fonte-mono` (IBM Plex Mono), tamanhos `--tam-*` (inclui `--tam-display` e `--tam-kpi`), pesos (inclui `--peso-leve`), alturas de linha e `--espacamento-titulo` |
+| `tokens/spacing.css` | escala `--esp-1` … `--esp-13` (2 a 48px), raios (10 controle, 6 badge, 16 cartão, 20 painel), sombras (`--sombra-suave`, `--sombra-flutuante`, `--sombra-objeto`), `--desfoque-vidro`, `--transicao`, medidas de layout (menu 232px, painel lateral 340px, barra 64px, conteúdo 1440px, controle 40/36px, quebra 900px) |
+| `tokens/fonts.css` | `@font-face` de Manrope variável (200–800, woff2 latin e latin-ext) e IBM Plex Mono 400/500 apontando para `assets/fonts` |
 | `tokens/base.css` | reset mínimo, títulos, `.mono`, `.num`, `.sec`, `.peq`, foco visível |
 
 As fontes são do [google/fonts](https://github.com/google/fonts), com licença SIL Open Font License. O app carrega as mesmas famílias pelo Google Fonts em `app/index.html`.
@@ -184,7 +186,23 @@ O export não tinha versões duplicadas de um mesmo componente em pastas diferen
 - **Status:** sempre texto no badge: Rascunho, Solicitado, Aprovado, Em trânsito, Recebido/Encerrado, Com divergência, Cancelado. Motivos: Falta, Sobra, Avaria, Trocado. Tratamentos: Reenvio, Baixa em trânsito, Chegou depois, Ajuste na origem, Erro de contagem, Não saiu da origem.
 - **Carregamento:** texto com reticência "Carregando…", "Abrindo o Warefly…", "Enviando foto…".
 
-## VISUAL FOUNDATIONS
+## VISUAL FOUNDATIONS (v2)
+- **Vibe:** painel operacional claro, em camadas. Fundo cinza-azulado, painéis um tom abaixo, cartões um tom acima, e o branco puro reservado ao que está dentro do cartão ou selecionado. Muito respiro, nada de borda grossa.
+- **Cores:** azul `#2F6FE4` (ação, seleção, foco, blocos do 211 no mapa), asa `#5B9AF2` (botão primário em repouso, realce), verde `#3DAA55` (fluxo normal: linhas do mapa, barras em destaque, tendência boa, bases), vermelho `#E5484D` (alerta: divergência, reserva vencendo, tendência ruim), âmbar `#F0B04A` (em trânsito, reduzido), cinza `#B9BEC4` (cancelado). Texto `#1F2328`, secundário `#646C73`, legenda decorativa `#8A9198`.
+- **Tipografia:** Manrope para tudo. Título de página 30px 400 −0.02em; número de indicador 28px 400 −0.02em; título de cartão 14px 500; corpo 13–14px 400; legenda 11–12px. Números tabulares. IBM Plex Mono para código SAP e nº de documento (SOL-, REM-, RES-…).
+- **Superfícies:** página `#EEF1F4`; painel lateral `#E6E9ED` com raio 20; cartão `#F7F8FA` raio 16 com brilho interno (`inset 0 1px 0 #fff`) e sombra difusa; tabela/campo dentro do cartão em branco raio 12.
+- **Menu:** superior, em pílulas dentro de um trilho `#E2E6EA`; ativo = pílula branca com `--sombra-suave`. Botões de ícone quadrados 36px raio 11.
+- **Indicadores:** número + quadradinho 14px verde/vermelho com seta + mini-gráfico de barras finas (2px, cinza com 1–2 barras na cor do tom).
+- **Progresso:** trilho de 2px com marcador triangular embaixo do ponto atual; cor do tom.
+- **Badges:** sólidos, raio 6, 11px 600, largura fixa na tabela; verde forte `#198C3E`, vermelho `#D93636`, âmbar com texto escuro, cinza com texto escuro.
+- **Ação em etapas:** blocos de escolha (Aprovar / Reduzir / Separar) → campos "Rótulo: **valor**" em branco → botão azul largo; depois de confirmar, o botão vira preto `#111316` com ícone de check.
+- **Mapa:** 3256 (almoxarifado geral) em armário amarelo; 211 Geral num bloco violeta `#7357D6` com o estoque central e os locais de GV (multifuncional, comercial, moto) em estantes azuis dentro; sub-bases em blocos agrupados por supervisor (um nó de junção por grupo). Cor da base pelo estoque: verde normal, amarelo `#F2B416` com material até 20% acima do mínimo, vermelho com material abaixo do mínimo. Nome da base pequeno em cinza claro embaixo do código. Linhas finas verdes (vermelhas com divergência); despachos como caminhões sobre as linhas, param com o mouse em cima; clique abre popover de vidro. A vista tem limite de arrasto e de zoom.
+- **Vidro:** só para o que flutua sobre o mapa (cartões de gráfico, popover): `--vidro` + `--desfoque-vidro`.
+- **Animação:** só `--transicao` (120ms) em cor, fundo e sombra. Nada se move ou cresce.
+- **Foco:** contorno 2px azul com offset 2px. Desabilitado: opacidade 0.55.
+- **Impressão (guia):** sem mudança — branco e preto, bordas 1px pretas, 12pt.
+
+### v1 (histórico)
 - **Vibe:** moderno e limpo. Superfícies brancas sobre névoa, bordas finas, muito respiro. Legível no galpão e no celular, sem enfeite.
 - **Cores:** azul voo `#1E66C9` (ação, marca, foco, dado em destaque), asa `#5B9CF0` (realce, segunda pena do símbolo), marinho `#0B2447` (títulos, logotipo), cinza `#74808F` (bordas, texto secundário), névoa `#F3F6FA` (fundo). Cartão branco. Status: ciano `#0E8AA8` solicitado/aprovado, âmbar `#D49A1C` em trânsito, verde `#2F9E62` recebido, vermelho `#B3263E` divergência, cinza rascunho/cancelado; cada um com `-fundo` claro e `-texto` escuro. Séries de gráfico: azul voo, `#A9C3E8`, `#DCE6F4`.
 - **Tipografia:** Barlow 400/500/600 para tudo, incluindo números de KPI (tabular); IBM Plex Mono para código SAP, nº de documento e quantidades em tabela. h1 1.5rem, h2 1.15rem, h3 1rem, todos 600 lh 1.2. Corpo 16px lh 1.45. Tabela 0.92rem; th 0.78rem caixa-alta 0.04em cinza. Logotipo "Warefly" 600 com −0.01em.
@@ -206,6 +224,7 @@ O export não tinha versões duplicadas de um mesmo componente em pastas diferen
 - **Gráficos (adição):** cores de status e cobre/grafite; grade tracejada aço; rótulos de eixo em mono; tooltip grafite com texto papel.
 
 ## ICONOGRAPHY
+- **v2:** a referência nova usa ícones de traço fino (1.6px, 16px) em botões quadrados, sempre com `aria-label`. Use Lucide se for adotar no app.
 - O app **não usa biblioteca de ícones**, fonte de ícones nem SVGs de interface. Menu, barra inferior e botões são só texto.
 - Único SVG: o **símbolo** (tronco com três ramos — o 211 distribuindo para as bases), em `assets/simbolo.svg` e `assets/favicon.svg` (quadrado grafite, raio 6). Use o componente `Simbolo`/`Marca`.
 - Unicode como ícone: `←` (voltar), `→` (origem → destino, e atalho do painel), `·` (separador), `…` (carregando e menu de cartão), `▾` (filtro de período), `/` (breadcrumb), `⌘K`.

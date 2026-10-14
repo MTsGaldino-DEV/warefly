@@ -10,6 +10,8 @@ COPY design-system /src/design-system
 COPY app ./
 # app/.env traz VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY (chaves públicas do front).
 RUN test -f .env || (echo "Falta app/.env com VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY" && exit 1)
+# Commit mostrado no pé do login (o .git não entra no build). Ver docker-compose.yml.
+ARG WAREFLY_COMMIT=
 RUN npm run build
 
 FROM nginx:1.27-alpine
