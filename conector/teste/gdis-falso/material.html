@@ -1,0 +1,21 @@
+<!doctype html>
+<html><body>
+<select id="codMaterial" name="codMaterial"><option value=""></option><option value="1776">1776</option><option value="379454">379454</option><option value="240">240</option></select>
+<select id="selMaterial" name="selMaterial"><option value=""></option><option value="1776">PARAFUSO</option><option value="379454">ACESSÓRIO DESCONECTAVEL</option><option value="240">CABO 240MM2</option></select>
+<input type="text" id="txtQtdeMat" name="txtQtdeMat" maxlength="3">
+<input type="button" name="btoMateriais" value="+ Materiais"> <input type="button" name="btoFechar" value="Fechar">
+<script>
+  var servico
+  function setServico(s) { servico = s }
+  var cod = document.getElementById('codMaterial'), desc = document.getElementById('selMaterial')
+  cod.addEventListener('change', function () { desc.value = cod.value })
+  document.getElementsByName('btoMateriais')[0].onclick = function () {
+    if (!desc.value) return alert('Escolha o material')
+    if (!document.getElementById('txtQtdeMat').value.trim()) return alert('Preencha a quantidade de materiais.')
+    // Como no GDIS: a janela confere o repetido antes de chamar a nota.
+    if (servico.materiais.indexOf(desc.value) >= 0) return alert('Material não incluído.\nEste material já existe na lista.')
+    window.opener.addMaterial(0, servico, desc.value, desc.options[desc.selectedIndex].text, document.getElementById('txtQtdeMat').value)
+    cod.selectedIndex = 0; desc.selectedIndex = 0; document.getElementById('txtQtdeMat').value = ''
+  }
+</script>
+</body></html>

@@ -1,6 +1,4 @@
 import { expect, type Page } from '@playwright/test'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import * as XLSX from 'xlsx'
 
 export const USUARIOS = {
@@ -13,19 +11,28 @@ export const USUARIOS = {
 
 export type Quem = keyof typeof USUARIOS
 
-export const FOTO = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'guia.jpg')
-
 export async function entrar(page: Page, quem: Quem) {
   const u = USUARIOS[quem]
   await page.goto('/login')
   await page.getByLabel('Usuário').fill(u.email)
   await page.getByLabel('Senha').fill(u.senha)
   await page.getByRole('button', { name: 'Entrar' }).click()
-  await expect(page.getByRole('heading', { level: 1 })).toContainText(`Olá, ${u.nome.split(' ')[0]}`)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Almoxarifado 211')
+  // Confere quem entrou pelo menu da conta e fecha o menu.
+  await abrirConta(page)
+  await expect(page.getByText(u.nome, { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Conta' }).click()
+}
+
+/** Abre o menu da conta (ícone de pessoa) no Início. */
+export async function abrirConta(page: Page) {
+  await page.getByRole('button', { name: 'Conta' }).click()
 }
 
 export async function sair(page: Page) {
-  await page.getByRole('complementary').getByRole('button', { name: 'Sair' }).click()
+  await page.goto('/')
+  await abrirConta(page)
+  await page.getByRole('button', { name: 'Sair' }).click()
   await expect(page).toHaveURL(/\/login/)
 }
 

@@ -29,7 +29,8 @@ Critério de sucesso: a partir do mês e da lista de itens, o robô deixa a nota
 
 ```
 conector/
-  servidor.js               Express na porta 3335, SSE, sessão GDIS, uma tarefa por vez
+  servidor.js               Express na porta 3335, SSE, CORS; casca sobre a sessão
+  sessao.js                 Edge do robô, login, uma tarefa por vez, estado para a aba reler
   gdis.js                   CONFIG (URLs em 192.168.1.110), abrir o Edge, login, checar sessão
   fluxos/
     requisicaoMaterial.js   passo a passo da nota corretiva
@@ -45,7 +46,7 @@ O `gdis.js` mantém o que o conector atual já resolve: Edge visível, `--disabl
 
 | Método | Endereço | Uso |
 |---|---|---|
-| GET | `/ping` | `{ ok, sessaoOk, tarefaAtiva }` |
+| GET | `/ping` | `{ ok, sessaoOk, tarefaAtiva, aguardandoLogin, andamento }`: a aba relê daqui ao abrir ou recarregar |
 | GET | `/eventos` | SSE com o andamento |
 | POST | `/sessao/iniciar` | Abre o Edge na tela de login do GDIS |
 | POST | `/sessao/confirmar` | Vai ao `menu.jsp`; se não caiu no login, a sessão está ok |
@@ -58,6 +59,8 @@ O `gdis.js` mantém o que o conector atual já resolve: Edge visível, `--disabl
 - CORS só para as origens do Warefly (Vite local e o domínio de produção, configuráveis numa lista no `servidor.js`).
 - Responde `Access-Control-Allow-Private-Network: true` nos preflights, porque a página em produção é HTTPS e chama `http://localhost`.
 - O Edge fica aberto ao fim da tarefa.
+- Um só ouvinte de alertas por navegador: aceita e registra só enquanto o robô trabalha; fora disso o alerta fica na tela para a pessoa.
+- Fechar a aba do robô (ou o Edge) marca a sessão como perdida.
 
 ### 3.4 Eventos SSE
 

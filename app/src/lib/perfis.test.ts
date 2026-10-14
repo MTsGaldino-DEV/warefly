@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { basesComEquipes, locaisGeridos, regionaisGeridos, rotuloDoPerfil } from './perfis'
+import { locaisGeridos, regionaisGeridos, rotuloDoPerfil } from './perfis'
 import type { Almox, Atribuicao } from './supabase'
 
 const local = (id: string, tipo: Almox['tipo'], pai_id: string | null, ativo = true): Almox => ({
@@ -49,18 +49,6 @@ describe('locaisGeridos', () => {
   })
   it('admin gere todos os locais ativos, menos o externo', () => {
     expect(ids(locaisGeridos(ALMOX, [], true))).toEqual(['211', 'MNT', 'RSP', 'R2', 'B2'])
-  })
-})
-
-describe('basesComEquipes', () => {
-  it('supervisor mantém as equipes das próprias bases', () => {
-    expect(ids(basesComEquipes(ALMOX, SUPERVISOR, false))).toEqual(['MNT'])
-  })
-  it('gestora mantém as das bases do regional dela', () => {
-    expect(ids(basesComEquipes(ALMOX, GESTORA, false))).toEqual(['MNT', 'RSP'])
-  })
-  it('admin mantém as de todas as bases ativas', () => {
-    expect(ids(basesComEquipes(ALMOX, [], true))).toEqual(['MNT', 'RSP', 'B2'])
   })
 })
 

@@ -85,12 +85,6 @@ export function formatarQtd(valor: number | string | null | undefined): string {
 }
 
 /** Diferença com sinal explícito: +2,5 · −1 · 0 */
-export function formatarSinal(valor: number | string): string {
-  const n = Number(valor)
-  if (n === 0) return '0'
-  return `${n < 0 ? '−' : '+'}${numeroBR.format(Math.abs(n))}`
-}
-
 export function formatarMoeda(valor: number | string | null | undefined): string {
   if (valor === null || valor === undefined || valor === '') return '—'
   return moedaBR.format(Number(valor))
@@ -100,21 +94,6 @@ export function formatarData(iso: string | null | undefined): string {
   if (!iso) return '—'
   const [a, m, d] = iso.slice(0, 10).split('-')
   return `${d}/${m}/${a}`
-}
-
-const dataHoraBR = new Intl.DateTimeFormat('pt-BR', {
-  timeZone: FUSO,
-  day: '2-digit',
-  month: '2-digit',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-  hour12: false,
-})
-
-export function formatarDataHora(iso: string | null | undefined): string {
-  if (!iso) return '—'
-  return dataHoraBR.format(new Date(iso)).replace(',', '')
 }
 
 export function hojeISO(agora: Date = new Date()): string {
@@ -136,12 +115,6 @@ export function lerNumero(texto: string | number): number {
   else if (/^-?\d{1,3}(\.\d{3})+$/.test(limpo)) normalizado = limpo.replace(/\./g, '')
   else normalizado = limpo
   return /^-?\d+(\.\d+)?$/.test(normalizado) ? Number(normalizado) : Number.NaN
-}
-
-/** Número para preencher um campo editável: vírgula decimal, sem milhar. */
-export function paraCampo(valor: number | string | null | undefined): string {
-  if (valor === null || valor === undefined || valor === '') return ''
-  return String(Number(valor)).replace('.', ',')
 }
 
 /** Retorna a mensagem de erro, ou null se a quantidade é válida. */

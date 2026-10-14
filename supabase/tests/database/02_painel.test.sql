@@ -39,7 +39,10 @@ insert into atribuicoes (almox_id, usuario_id, funcao) values
 insert into materiais (id, codigo_sap, descricao, unidade, preco) values
   ('10000000-0000-4000-a000-0000000000b1', '8001', 'PARAFUSO', 'PC', 2.00),
   ('10000000-0000-4000-a000-0000000000b2', '8002', 'CONECTOR', 'PC', 10.00);
-insert into equipes (id, almox_id, nome) values ('20000000-0000-4000-a000-0000000000e1', tests.a('MNT'), 'Equipe 1');
+-- Equipe do grupo do supervisor de Mantena, liberada em Mantena
+insert into equipes (id, codigo_zeus, nome, integrantes, frota, grupo_id)
+values ('20000000-0000-4000-a000-0000000000e1', 90001, 'Equipe 1', 'Integrante A/Integrante B', '1000', (select id from grupos where nome = 'Victor'));
+insert into equipe_locais (equipe_id, almox_id) values ('20000000-0000-4000-a000-0000000000e1', tests.a('MNT'));
 
 -- Saldo inicial no 211 e em Mantena
 select tests.como('00000000-0000-4000-a000-0000000000a1');

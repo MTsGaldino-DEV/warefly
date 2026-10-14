@@ -12,6 +12,7 @@ O sistema se chamava **SIA** (Sistema Integrado de Almoxarifado) até 30/09/2026
 | `supabase/tests/database` | Testes pgTAP que simulam cada papel (262 verificações) |
 | `app/` | App React + Vite + TypeScript (fases 2 a 5) |
 | `app/e2e` | Testes ponta a ponta (Playwright) contra o Supabase local |
+| `conector/` | Conector local para automações no GDIS (Edge + Playwright, porta 3335) ([README](conector/README.md)) |
 | `design-system/` | Design system Warefly: tokens (usados pelo app), fontes, componentes de referência, UI kits e lint de aderência ([README](design-system/README.md)) |
 | `design-system/referencia` | Páginas HTML de referência visual, para abrir no navegador |
 
@@ -83,6 +84,29 @@ As 8 primeiras migrations foram aplicadas no projeto `hkfbypwkjvhuuwbijlwy` em 2
 - Netlify: arquivo `app/public/_redirects` com `/* /index.html 200`
 
 Depois de publicar, cadastre a URL em **Authentication → URL Configuration** no painel do Supabase.
+
+### No Docker Desktop (rede local)
+
+O container compila o app com o `app/.env` (projeto remoto) e serve com o nginx. O `.dockerignore` deixa o `.env` da raiz, que tem a `service_role`, fora do build.
+
+```powershell
+docker compose up -d --build                         # porta 8090 (8080 já é de outro container)
+$env:WAREFLY_PORTA=8095; docker compose up -d --build   # outra porta, se precisar
+docker compose logs -f warefly                       # ver o nginx
+docker compose down                                  # parar
+```
+
+Depois de mudar o código ou o `app/.env`, rode `docker compose up -d --build` de novo. O container volta sozinho quando o Docker Desktop abre (`restart: unless-stopped`).
+
+- **Neste PC:** `http://localhost:8090`.
+- **Outros PCs da rede:** `http://<IP-deste-PC>:8090` (o IP aparece em `ipconfig`, linha "Endereço IPv4"). Se não abrir, libere a porta no firewall do Windows, num PowerShell **como administrador**:
+
+  ```powershell
+  New-NetFirewallRule -DisplayName "Warefly 8090" -Direction Inbound -Protocol TCP -LocalPort 8090 -Action Allow
+  ```
+
+- O app funciona em HTTP pelo IP: os ids são gerados com `crypto.getRandomValues` (`app/src/lib/id.ts`), porque `crypto.randomUUID` só existe em HTTPS ou `localhost`.
+- **Automação no GDIS:** o [conector](conector/README.md) não roda no Docker (precisa abrir o Edge na tela e da rede da Cemig). Rode `npm start` na pasta `conector` e abra o Warefly por `http://localhost:8090` neste PC: pelo IP, o Edge pode bloquear a chamada de um site HTTP para o `localhost`.
 
 ## Primeiro acesso (fase 6)
 

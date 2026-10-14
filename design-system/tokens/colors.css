@@ -1,40 +1,56 @@
-/* Warefly — azul céu, marinho, cinza, névoa. Layout claro das imagens de referência. */
+/* Warefly v2 (13/10/2026) — superfícies claras em camadas, azul para ação, verde para operação, vermelho para alerta.
+   Os nomes dos tokens são os mesmos da v1: o app importa este arquivo direto, então só os valores mudaram. */
 :root {
   /* Base */
-  --cor-marca: #1e66c9;      /* azul voo: ação, marca, dado em destaque */
-  --cor-asa: #5b9cf0;        /* azul claro: segunda pena do símbolo, realces */
-  --cor-estrutura: #0b2447;  /* marinho: títulos, logotipo */
-  --cor-neutra: #74808f;     /* cinza: bordas, texto secundário */
-  --cor-fundo: #f3f6fa;      /* névoa: fundo */
-  --cor-dado-2: #a9c3e8;     /* série secundária de gráfico */
-  --cor-dado-3: #dce6f4;     /* série terciária de gráfico */
+  --cor-marca: #2f6fe4;      /* azul: ação, marca, seleção, foco */
+  --cor-asa: #5b9af2;        /* azul claro: segunda pena do símbolo, botão primário em repouso */
+  --cor-estrutura: #1f2328;  /* quase preto: títulos, logotipo */
+  --cor-neutra: #8a9198;     /* cinza: bordas, legendas decorativas */
+  --cor-fundo: #eef1f4;      /* fundo da página */
+  --cor-dado-2: #9ed3ab;     /* série secundária de gráfico (verde claro) */
+  --cor-dado-3: #dde1e5;     /* série terciária / grade de gráfico */
+
+  /* Novos na v2 */
+  --cor-operacao: #3daa55;        /* verde: fluxo normal, linhas do mapa, barras em destaque, tendência boa */
+  --cor-operacao-forte: #198c3e;  /* verde do badge sólido (texto branco passa 4,5:1) */
+  --cor-confirmar: #111316;       /* botão depois de confirmar a ação ("Remessa gerada") */
+  --cor-reserva: #f2c230;         /* amarelo: 3256 e reservas CEMIG no mapa */
+  --cor-reserva-forte: #b98c0a;   /* borda/sombra do amarelo */
+  --superficie-painel: #e6e9ed;   /* painel lateral que agrupa cartões */
+  --superficie-elevada: #ffffff;  /* tabela dentro de cartão, campo, pílula ativa, aba selecionada */
+  --texto-3: var(--cor-neutra);   /* legenda decorativa, só ao lado de um valor que já diz tudo */
+  --cor-211: #7357d6;             /* violeta: 211 Geral no mapa (centro de distribuição; não confunde com azul de ação nem verde de base) */
+  --cor-211-forte: #553bb0;       /* borda/sombra do violeta; texto branco passa 4,5:1 */
+  --cor-211-suave: color-mix(in srgb, var(--cor-211) 7%, var(--superficie-elevada)); /* fundo do bloco 211 Geral */
 
   /* Status (sempre com texto no badge) */
-  --st-info: #0e8aa8; --st-info-fundo: #dff3f7; --st-info-texto: #0a6780;
-  --st-transito: #d49a1c; --st-transito-fundo: #fbf0d9; --st-transito-texto: #8a6310;
-  --st-ok: #2f9e62; --st-ok-fundo: #e1f5e9; --st-ok-texto: #1d7446;
-  --st-alerta: #b3263e; --st-alerta-fundo: #f7e0e4; --st-alerta-texto: #8e1d31;
-  --st-neutro: #76838a; --st-neutro-fundo: #eceff0; --st-neutro-texto: #4b575d;
+  --st-info: #2f6fe4; --st-info-fundo: #e3ecfc; --st-info-texto: #1f4fa8;
+  --st-transito: #f0b04a; --st-transito-fundo: #fcf1dc; --st-transito-texto: #7a4f0c;
+  --st-atencao: #f2b416; --st-atencao-fundo: #fdf3d3; --st-atencao-texto: #7a5800; /* estoque próximo do mínimo */
+  --st-ok: #3daa55; --st-ok-fundo: #e2f4e6; --st-ok-texto: #17702f;
+  --st-alerta: #e5484d; --st-alerta-fundo: #fce4e4; --st-alerta-texto: #a82a2e;
+  --st-neutro: #b9bec4; --st-neutro-fundo: #eceef1; --st-neutro-texto: #50575e;
 
   /* Derivados */
-  --superficie: #ffffff;
-  --borda: color-mix(in srgb, var(--cor-neutra) 20%, transparent);
-  --borda-forte: color-mix(in srgb, var(--cor-neutra) 35%, transparent);
-  --texto: #1a2433;
-  --texto-2: var(--cor-neutra);
+  --superficie: #f7f8fa;
+  --borda: color-mix(in srgb, var(--cor-neutra) 16%, transparent);
+  --borda-forte: color-mix(in srgb, var(--cor-neutra) 32%, transparent);
+  --texto: #1f2328;
+  --texto-2: #646c73;
   --marca-hover: color-mix(in srgb, var(--cor-marca) 85%, black);
-  --marca-suave: color-mix(in srgb, var(--cor-marca) 12%, transparent);
-  --menu-fundo: #f8fafc;
-  --menu-texto: var(--cor-estrutura);
-  --menu-texto-ativo: var(--acao-texto);
+  --marca-suave: color-mix(in srgb, var(--cor-marca) 10%, transparent);
+  --menu-fundo: color-mix(in srgb, var(--superficie-painel) 60%, transparent);
+  --menu-texto: #50575e;
+  --menu-texto-ativo: var(--cor-estrutura);
   --menu-grupo: var(--cor-neutra);
-  --menu-hover: var(--marca-suave);           /* passar o mouse: azul claro */
-  --menu-ativo: var(--cor-marca);             /* selecionado: azul da marca, texto branco */
-  --menu-ativo-hover: var(--marca-hover);
+  --menu-hover: color-mix(in srgb, #ffffff 60%, transparent);
+  --menu-ativo: var(--superficie-elevada);    /* selecionado: pílula branca com sombra suave */
+  --menu-ativo-hover: var(--superficie-elevada);
   --menu-divisor: var(--borda);
-  --cabecalho-tabela: var(--cor-fundo);
-  --sombra-cartao: 0 1px 2px rgba(11,36,71,.06);
-  --veu: color-mix(in srgb, var(--cor-estrutura) 55%, transparent);
+  --cabecalho-tabela: transparent;
+  --sombra-cartao: inset 0 1px 0 #ffffff, 0 1px 2px rgba(17, 24, 39, .04), 0 8px 24px rgba(17, 24, 39, .04);
+  --veu: color-mix(in srgb, var(--cor-estrutura) 40%, transparent);
+  --vidro: color-mix(in srgb, var(--superficie) 88%, transparent); /* cartão sobre o mapa, com backdrop-filter */
 
   /* Aliases semânticos */
   --superficie-pagina: var(--cor-fundo);

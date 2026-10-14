@@ -1,7 +1,6 @@
 import { cloneElement, isValidElement, useId, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { formatarDoc, formatarQtd, rotuloStatus, tomStatus, type Tom } from '../lib/formato'
-import { Sparkline } from './graficos'
+import { rotuloStatus, tomStatus, type Tom } from '../lib/formato'
 
 /** Símbolo Warefly: asa de três penas em arco ascendente. */
 export function Simbolo({
@@ -39,19 +38,6 @@ export function Marca({ comNome = false }: { comNome?: boolean }) {
 /** Badge de status: sempre com texto. `tom` força a cor; `children` troca o texto. */
 export function StatusBadge({ status, tom, children }: { status?: string; tom?: Tom; children?: ReactNode }) {
   return <span className={`badge ${tom ?? tomStatus(status ?? '')}`}>{children ?? rotuloStatus(status)}</span>
-}
-
-export function Doc({ prefixo, numero }: { prefixo: 'PED' | 'REM' | 'SAI' | 'AJU'; numero: number }) {
-  return <span className="mono">{formatarDoc(prefixo, numero)}</span>
-}
-
-export function Qtd({ valor, unidade }: { valor: number | string | null | undefined; unidade?: string | null }) {
-  return (
-    <span className="mono">
-      {formatarQtd(valor)}
-      {unidade && valor !== null && valor !== undefined ? <span className="sec"> {unidade}</span> : null}
-    </span>
-  )
 }
 
 export type ItemTrilha = string | { rotulo: string; para: string }
@@ -199,52 +185,4 @@ export function Carregando({ texto = 'Carregando…' }: { texto?: string }) {
 
 export function Vazio({ children }: { children: ReactNode }) {
   return <div className="vazio">{children}</div>
-}
-
-const COR_TOM = { alerta: 'var(--st-alerta)', transito: 'var(--st-transito)', ok: 'var(--st-ok)', info: 'var(--st-info)' }
-
-/** Indicador: legenda com ponto do tom, número grande e mini-gráfico opcional. */
-export function Etiqueta({
-  valor,
-  legenda,
-  tom,
-  compacta = false,
-  serie,
-  href,
-  onClick,
-}: {
-  valor: ReactNode
-  legenda: ReactNode
-  tom?: 'alerta' | 'transito' | 'ok' | 'info'
-  /** Versão menor, para a grade 2×2 das bases. */
-  compacta?: boolean
-  /** Série do mini-gráfico à direita. */
-  serie?: number[]
-  /** Rota do app aberta ao clicar. */
-  href?: string
-  onClick?: () => void
-}) {
-  const classe = ['etiqueta', tom, compacta && 'compacta'].filter(Boolean).join(' ')
-  const conteudo = (
-    <>
-      <div className="etiqueta-texto">
-        <div className="legenda">{legenda}</div>
-        <div className="valor">{valor}</div>
-      </div>
-      {serie && <Sparkline valores={serie} cor={tom ? COR_TOM[tom] : undefined} />}
-    </>
-  )
-  if (href)
-    return (
-      <Link className={classe} to={href}>
-        {conteudo}
-      </Link>
-    )
-  if (onClick)
-    return (
-      <button type="button" className={classe} onClick={onClick}>
-        {conteudo}
-      </button>
-    )
-  return <div className={classe}>{conteudo}</div>
 }

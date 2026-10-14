@@ -14,13 +14,6 @@ export function locaisGeridos(almoxarifados: Almox[], atribuicoes: Atribuicao[],
   return ativos.filter((a) => regionais.has(a.id) || (a.pai_id !== null && regionais.has(a.pai_id)))
 }
 
-/** Bases cujas equipes o usuário mantém: as que ele opera e as que gere. */
-export function basesComEquipes(almoxarifados: Almox[], atribuicoes: Atribuicao[], ehAdmin: boolean): Almox[] {
-  const opera = new Set(atribuicoes.filter((a) => a.funcao === 'responsavel').map((a) => a.almox_id))
-  const gere = new Set(locaisGeridos(almoxarifados, atribuicoes, ehAdmin).map((a) => a.id))
-  return almoxarifados.filter((a) => a.tipo === 'base' && a.ativo && (opera.has(a.id) || gere.has(a.id)))
-}
-
 /** Rótulo do perfil no rodapé do menu. */
 export function rotuloDoPerfil(p: {
   papel: Enum<'papel_usuario'> | null | undefined

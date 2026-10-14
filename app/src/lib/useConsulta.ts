@@ -45,11 +45,3 @@ export async function listaOuErro<T>(p: PromiseLike<{ data: T[] | null; error: u
   if (error) throw error
   return data ?? []
 }
-
-/** Para .single(): lança se houver erro ou se o registro não vier. */
-export async function umOuErro<T>(p: PromiseLike<{ data: T; error: unknown }>): Promise<NonNullable<T>> {
-  const { data, error } = await p
-  if (error) throw error
-  if (data === null || data === undefined) throw new Error('Registro não encontrado.')
-  return data
-}

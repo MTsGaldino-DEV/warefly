@@ -109,7 +109,10 @@ insert into materiais (id, codigo_sap, descricao, unidade, preco, ativo) values
   (tests.m('CONEC'),   '9002', 'CONECTOR TESTE',  'PC', 10.00, true),
   (tests.m('CABO'),    '9003', 'CABO TESTE',      'M',  4.00,  true),
   (tests.m('INATIVO'), '9004', 'MATERIAL INATIVO', 'PC', null,  false);
-insert into equipes (id, almox_id, nome) values ('20000000-0000-4000-a000-000000000001', tests.a('MNT'), 'Equipe 12');
+-- Equipe do grupo do supervisor de Mantena, liberada em Mantena
+insert into equipes (id, codigo_zeus, nome, integrantes, frota, grupo_id)
+values ('20000000-0000-4000-a000-000000000001', 90012, 'Equipe 12', 'Integrante A/Integrante B', '1000', (select id from grupos where nome = 'Victor'));
+insert into equipe_locais (equipe_id, almox_id) values ('20000000-0000-4000-a000-000000000001', tests.a('MNT'));
 
 select throws_ok(
   $$ insert into atribuicoes (almox_id, usuario_id, funcao) values (tests.a('3256'), tests.u('C211'), 'responsavel') $$,

@@ -1,15 +1,15 @@
 import { expect, test } from '@playwright/test'
-import { entrar, sair, xlsx } from './apoio'
+import { abrirConta, entrar, sair, xlsx } from './apoio'
 
 test.describe.configure({ mode: 'serial' })
 
 test('admin vê os 13 almoxarifados e as unidades da planilha', async ({ page }) => {
   await entrar(page, 'admin')
-  await page.getByRole('link', { name: 'Almoxarifados' }).click()
+  await page.goto('/admin/almoxarifados')
   await expect(page.getByRole('row')).toHaveCount(14) // cabeçalho + 13
   await expect(page.getByRole('row', { name: /RSP.*Resplendor/ })).toContainText('Vinícius')
 
-  await page.getByRole('link', { name: 'Unidades' }).click()
+  await page.goto('/admin/unidades')
   await expect(page.getByRole('row', { name: /^M3/ })).toContainText('Sim')
   await expect(page.getByRole('row', { name: /^PC/ })).toContainText('Não')
   await expect(page.getByLabel('Sigla no SAP de PC', { exact: true })).toHaveValue('PEÇ')
@@ -26,7 +26,7 @@ test('admin vê os 13 almoxarifados e as unidades da planilha', async ({ page })
 
 test('admin importa materiais da planilha do SAP com bloqueios', async ({ page }) => {
   await entrar(page, 'admin')
-  await page.getByRole('link', { name: 'Materiais' }).click()
+  await page.goto('/admin/materiais')
   await page.getByRole('link', { name: 'Importar planilha' }).click()
 
   await page.getByLabel('1. Arquivo').setInputFiles(
@@ -60,7 +60,7 @@ test('admin importa materiais da planilha do SAP com bloqueios', async ({ page }
 
 test('admin atribui bases ao supervisor Victor', async ({ page }) => {
   await entrar(page, 'admin')
-  await page.getByRole('link', { name: 'Usuários e atribuições' }).click()
+  await page.goto('/admin/usuarios')
   await page.getByRole('row', { name: /Victor/ }).click()
   for (const base of ['Mantena', 'Itabirinha', 'Coroaci']) {
     await page.getByRole('checkbox', { name: new RegExp(base) }).check()
@@ -73,7 +73,7 @@ test('admin atribui bases ao supervisor Victor', async ({ page }) => {
 
 test('admin carrega o saldo inicial do 211 e de Mantena', async ({ page }) => {
   await entrar(page, 'admin')
-  await page.getByRole('link', { name: 'Saldo inicial' }).click()
+  await page.goto('/admin/saldo-inicial')
 
   // Material inexistente bloqueia tudo
   await page.getByLabel('Almoxarifado').selectOption({ label: '211 · Almoxarifado regional' })
@@ -94,21 +94,12 @@ test('admin carrega o saldo inicial do 211 e de Mantena', async ({ page }) => {
   await page.getByLabel('Planilha').setInputFiles(xlsx('saldo.xlsx', [['codigo_sap', 'quantidade'], [900001, 5]]))
   await page.getByRole('button', { name: 'Importar saldo inicial' }).click()
   await expect(page.getByText(/Saldo inicial importado/)).toBeVisible()
-
-  await page.getByRole('link', { name: 'Saldo', exact: true }).click()
-  await page.getByLabel('Almoxarifado').selectOption({ label: '211 · Almoxarifado regional' })
-  await expect(page.getByRole('row', { name: /900003.*100,5/ })).toBeVisible()
 })
 
-test('supervisor não vê cadastros nem base de outro supervisor', async ({ page }) => {
+test('supervisor não acessa os cadastros do admin', async ({ page }) => {
   await entrar(page, 'victor')
-  await expect(page.getByRole('link', { name: 'Materiais', exact: true })).toHaveCount(0)
-  await page.getByRole('link', { name: 'Saldo', exact: true }).first().click()
-  await expect(page.getByRole('heading', { name: 'Saldo', level: 1 })).toBeVisible()
-  const opcoes = await page.getByLabel('Almoxarifado').locator('option').allTextContents()
-  expect(opcoes).toEqual(['CRC · Coroaci', 'ITB · Itabirinha', 'MNT · Mantena'])
-  await page.getByLabel('Almoxarifado').selectOption({ label: 'MNT · Mantena' })
-  await expect(page.getByRole('row', { name: /900001.*5/ })).toBeVisible()
+  await abrirConta(page)
+  await expect(page.getByRole('button', { name: 'Administração' })).toHaveCount(0)
   await page.goto('/admin/materiais')
   await expect(page.getByText('Acesso restrito ao administrador.')).toBeVisible()
   await sair(page)
@@ -116,7 +107,7 @@ test('supervisor não vê cadastros nem base de outro supervisor', async ({ page
 
 test('gestora mantém os motivos de redução; supervisor não acessa', async ({ page }) => {
   await entrar(page, 'carlos')
-  await page.getByRole('link', { name: 'Motivos de redução' }).click()
+  await page.goto('/cadastros/motivos')
   await expect(page.getByRole('heading', { name: 'Motivos de redução', level: 1 })).toBeVisible()
   await expect(page.getByLabel(/^Nome do motivo/)).toHaveCount(4)
   await page.getByLabel('Novo motivo').fill('Pedido em duplicidade')
@@ -132,7 +123,6 @@ test('gestora mantém os motivos de redução; supervisor não acessa', async ({
   await sair(page)
 
   await entrar(page, 'victor')
-  await expect(page.getByRole('link', { name: 'Motivos de redução' })).toHaveCount(0)
   await page.goto('/cadastros/motivos')
   await expect(page.getByText('Acesso restrito à gestão do almoxarifado e ao administrador.')).toBeVisible()
 })

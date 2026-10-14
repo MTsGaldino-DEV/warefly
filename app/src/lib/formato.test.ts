@@ -1,13 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   formatarData,
-  formatarDataHora,
   formatarDoc,
   formatarQtd,
-  formatarSinal,
   hojeISO,
   lerNumero,
-  paraCampo,
   qtdValida,
   rotuloStatus,
   tomStatus,
@@ -39,9 +36,6 @@ describe('datas', () => {
   it('formata data ISO sem deslocar o fuso', () => {
     expect(formatarData('2026-09-28')).toBe('28/09/2026')
     expect(formatarData(null)).toBe('—')
-  })
-  it('formata data e hora no fuso de São Paulo', () => {
-    expect(formatarDataHora('2026-09-29T02:30:00Z')).toBe('28/09/2026 23:30')
   })
   it('hoje é calculado no fuso de São Paulo', () => {
     expect(hojeISO(new Date('2026-09-29T02:00:00Z'))).toBe('2026-09-28')
@@ -84,15 +78,6 @@ describe('qtdValida', () => {
   })
 })
 
-describe('formatarSinal', () => {
-  it('mostra sinal explícito com menos tipográfico', () => {
-    expect(formatarSinal(-1)).toBe('−1')
-    expect(formatarSinal(2.5)).toBe('+2,5')
-    expect(formatarSinal(0)).toBe('0')
-    expect(formatarSinal('-1234.5')).toBe('−1.234,5')
-  })
-})
-
 describe('lerNumero no padrão brasileiro', () => {
   it('ponto em grupos de três é separador de milhar', () => {
     expect(lerNumero('1.000')).toBe(1000)
@@ -110,13 +95,5 @@ describe('qtdValida: casas decimais', () => {
   it('aceita até três casas', () => {
     expect(qtdValida('1,125', true)).toBeNull()
     expect(qtdValida('1,1255', true)).toBe('Use no máximo 3 casas decimais.')
-  })
-})
-
-describe('paraCampo', () => {
-  it('escreve número para edição sem separador de milhar', () => {
-    expect(paraCampo(1500)).toBe('1500')
-    expect(paraCampo('2.500')).toBe('2,5')
-    expect(paraCampo(null)).toBe('')
   })
 })
