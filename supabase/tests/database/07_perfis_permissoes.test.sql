@@ -221,7 +221,7 @@ select is(
   'com_divergencia'::status_remessa, 'operador de base recebe o despacho (com falta)');
 reset role;
 
--- Divergência: tratamento é da gestão do local
+-- Divergência (opção B): a base justifica; a gestão aplica o tratamento
 select tests.como('OP211');
 select throws_ok(
   $$ select rpc_tratar_divergencia((select id from remessa_itens where remessa_id = tests.id('rem1')), 'baixa_transito', 1, 'Perda') $$,
@@ -232,12 +232,43 @@ select lives_ok(
   $$ select rpc_tratar_divergencia((select id from remessa_itens where remessa_id = tests.id('rem1')), 'baixa_transito', 1, 'Perda') $$,
   'gestora trata o lado do 211');
 reset role;
+select tests.como('OP211');
+select throws_ok(
+  $$ select rpc_justificar_divergencia((select id from remessa_itens where remessa_id = tests.id('rem1')), 'Vi no balcão') $$,
+  '42501', null, 'operador do 211 não justifica divergência');
+reset role;
+insert into tests.ctx select 'item1', id from remessa_itens where remessa_id = tests.id('rem1');
+select tests.como('VINI');
+select throws_ok(
+  $$ select rpc_justificar_divergencia(tests.id('item1'), 'Não é minha') $$,
+  '42501', null, 'supervisor de outro grupo não justifica');
+reset role;
 select tests.como('OPBV');
+select throws_ok(
+  $$ select rpc_tratar_divergencia((select id from remessa_itens where remessa_id = tests.id('rem1')), 'chegou_depois', 1, 'Achado no carro') $$,
+  '42501', null, 'operador de base não aplica o tratamento');
+select throws_like(
+  $$ select rpc_justificar_divergencia((select id from remessa_itens where remessa_id = tests.id('rem1')), '   ') $$,
+  'Escreva a justificativa%', 'justificativa não pode ser vazia');
+select lives_ok(
+  $$ select rpc_justificar_divergencia((select id from remessa_itens where remessa_id = tests.id('rem1')), 'Achado no carro') $$,
+  'operador de base justifica a falta');
+select is((select justificativa_base from v_divergencias_abertas where remessa_id = tests.id('rem1')), 'Achado no carro',
+  'a base vê a própria justificativa');
+reset role;
+select tests.como('GESTORA');
+select is((select justificativa_base from v_divergencias_abertas where remessa_id = tests.id('rem1')), 'Achado no carro',
+  'a gestora lê a justificativa da base');
 select lives_ok(
   $$ select rpc_tratar_divergencia((select id from remessa_itens where remessa_id = tests.id('rem1')), 'chegou_depois', 1, 'Achado no carro') $$,
-  'operador de base trata o lado da base');
+  'gestora aplica o tratamento do lado da base');
 reset role;
 select is((select status from remessas where id = tests.id('rem1')), 'encerrada'::status_remessa, 'divergência resolvida');
+select tests.como('OPBV');
+select throws_like(
+  $$ select rpc_justificar_divergencia((select id from remessa_itens where remessa_id = tests.id('rem1')), 'Depois de fechada') $$,
+  '%não tem divergência em aberto%', 'não justifica divergência já tratada');
+reset role;
 
 -- Pedido ao 3256 e entrada do 3256: só a gestora
 select tests.como('OP211');

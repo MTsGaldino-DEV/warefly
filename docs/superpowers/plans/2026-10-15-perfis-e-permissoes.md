@@ -39,6 +39,26 @@ supabase test db
 
 **Atenção:** a tela de Usuários ainda oferece "Gerência (só consulta)". Com a migration, o banco recusa esse papel. Isso é corrigido no passo 2.
 
+## Passo 1b · Divergência pela gestão (feito, aguardando validação)
+
+Decisão de 15/10 (opção B): a base justifica; a gestão aplica o tratamento.
+
+Arquivos:
+- `supabase/migrations/20261015100200_divergencia_gestora.sql`.
+- `supabase/tests/database/01`, `03` e `07`: tratamentos que eram do supervisor passam para a gestão; a base justifica antes.
+
+O que a migration faz:
+
+| Parte | Detalhe |
+|---|---|
+| `divergencia_justificativas` | Histórico do que a base explica sobre cada item (texto, quem, quando). Não mexe no saldo. Leitura para quem vê a remessa; escrita só por RPC. |
+| `rpc_justificar_divergencia` | Quem responde pela origem ou pelo destino (supervisor, operador de base, gestora), com divergência em aberto e texto obrigatório. O operador do 211 recebe `42501`. |
+| `rpc_tratar_divergencia` | Só a gestão do almoxarifado do lado afetado (`fn_gere_local`) ou o admin. Regras de falta, sobra e quantidade sem mudança. |
+| `v_divergencias_abertas` | Colunas novas no fim: `justificativa_base`, `justificado_por`, `justificado_em` (a última). |
+| `fn_pode_ver_equipe` | O operador do 211 vê todas as equipes, mesmo sem local liberado (ponto 5 da revisão). |
+
+Verificação feita: 01: 150 · 02: 14 · 03: 32 · 04: 80 · 05: 73 · 06: 85 · 07: 77. Total de 511 asserções passando.
+
 ## Passo 2 · Web
 
 - `lib/perfis.ts` (+ teste): rótulos "Operador do 211" e "Operador de base"; sai "Gerência".
@@ -47,6 +67,7 @@ supabase test db
 - `Grupos.tsx` (admin): escolher o operador de base.
 - Pedido da base: mostrar o disponível do 211 (`fn_disponivel_211`).
 - `Equipes.tsx`: operador do 211 edita os locais liberados; não cria nem inativa.
+- Divergências: a base vê o botão "Justificar"; a gestora vê a justificativa e os botões de tratamento. O supervisor deixa de ver os botões de tratamento.
 - Menu: o operador do 211 vê aprovação, remessas, devoluções e equipes; não vê ajuste, entrada do 3256 nem divergências.
 - `database.types.ts`: gerar com `supabase gen types`.
 

@@ -145,8 +145,6 @@ reset role;
 select tests.como('00000000-0000-4000-a000-0000000000c3');
 select throws_like($$ select rpc_tratar_divergencia(tests.item('rem', '10000000-0000-4000-a000-0000000000d2'), 'estorno_origem', 2, 'x') $$,
   '%só vale para falta%', 'estorno na origem não vale para sobra');
-select throws_ok($$ select rpc_tratar_divergencia(tests.item('rem', '10000000-0000-4000-a000-0000000000d2'), 'erro_contagem', 2, 'x') $$,
-  '42501', null, 'origem não corrige a contagem do destino');
 select lives_ok($$ select rpc_tratar_divergencia(tests.item('rem', '10000000-0000-4000-a000-0000000000d1'), 'estorno_origem', 2,
   'Separação registrou 10, saíram 8') $$, 'origem estorna o que não saiu');
 reset role;
@@ -155,12 +153,18 @@ select is((select tipo from movimentacoes where tratamento_id is not null and al
   'ajuste_divergencia'::tipo_movimentacao, 'estorno lançado como ajuste de divergência');
 
 -- ---------------------------------------------------------------------
--- I2: a base corrige o próprio erro de contagem da sobra
+-- I2: a base justifica o erro de contagem; a gestão corrige (opção B, 15/10)
 -- ---------------------------------------------------------------------
 select is(tests.saldo('MNT', '10000000-0000-4000-a000-0000000000d2'), 12.000, 'Mantena recebeu 12 conectores no sistema');
 select tests.como('00000000-0000-4000-a000-0000000000c4');
+select throws_ok($$ select rpc_tratar_divergencia(tests.item('rem', '10000000-0000-4000-a000-0000000000d2'), 'erro_contagem', 2,
+  'Digitei 12, eram 10') $$, '42501', null, 'supervisor não corrige a contagem sozinho');
+select lives_ok($$ select rpc_justificar_divergencia(tests.item('rem', '10000000-0000-4000-a000-0000000000d2'), 'Digitei 12, eram 10') $$,
+  'supervisor justifica o erro de contagem');
+reset role;
+select tests.como('00000000-0000-4000-a000-0000000000c3');
 select lives_ok($$ select rpc_tratar_divergencia(tests.item('rem', '10000000-0000-4000-a000-0000000000d2'), 'erro_contagem', 2,
-  'Digitei 12, eram 10') $$, 'destino corrige a contagem');
+  'Digitei 12, eram 10') $$, 'gestão corrige a contagem do destino');
 reset role;
 select is(tests.saldo('MNT', '10000000-0000-4000-a000-0000000000d2'), 10.000, 'saldo da base volta ao físico');
 select is(tests.saldo('211', '10000000-0000-4000-a000-0000000000d2'), 90.000, '211 não é tocado');

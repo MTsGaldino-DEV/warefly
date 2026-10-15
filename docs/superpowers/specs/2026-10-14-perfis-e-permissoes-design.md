@@ -51,7 +51,7 @@ Definir os perfis de acesso do Warefly (web e app Android), o escopo de cada um 
 | Inventário do 211 | — | — | — | ✓ | ✓ |
 | Contagem de inventário nas bases | — | conta nas bases do grupo | — | abre, fecha, aprova | ✓ |
 | Ajuste de saldo | — | — | — | ✓ | ✓ |
-| Divergência | — | registra e justifica | — | fecha | ✓ |
+| Divergência | — | registra no recebimento e justifica | — | aplica o tratamento (fecha) | ✓ |
 | **Cadastros** | | | | | |
 | Integrantes das equipes | — | equipes do grupo | — | ✓ | ✓ |
 | Bases liberadas da equipe | — | — | ✓ | ✓ | ✓ |
@@ -96,6 +96,7 @@ Definir os perfis de acesso do Warefly (web e app Android), o escopo de cada um 
 | Operador de base | `grupos.operador_base_id` (uma pessoa por grupo), definido pelo admin. Opera as bases em que o supervisor do grupo tem a atribuição `supervisor`, então acompanha o supervisor sem cadastro duplicado. Mantém as equipes do grupo como o supervisor. |
 | Gestora e supervisor | Como antes: `responsavel` no 211; `responsavel` + `supervisor` nas bases. |
 | Gestão do local × operação do local | `fn_eh_responsavel` (responsável ou operador de base) decide o que é da gestão do local: pedido do local, entrada do 3256, tratamento de divergência. `fn_opera_local` (o anterior ou o operador do 211) decide o dia a dia: aprovar e cancelar pedido, enviar remessa, receber devolução, registrar saída. |
+| Divergência | Opção B (15/10): a base registra a falta ou sobra no recebimento e escreve a justificativa (`rpc_justificar_divergencia`); só a gestora e o admin aplicam o tratamento e mexem no saldo. O operador do 211 não trata nem justifica. |
 | Disponível do 211 | `fn_disponivel_211()`: supervisor, operador de base, operador do 211, gestora e admin. Por enquanto disponível = físico; a fase de Solicitações desconta o separado. |
 | Login da equipe | Segue o plano da fase A do Android (Edge Function `entrar`). |
 
