@@ -25,6 +25,7 @@ import {
   GRUPOS,
   nivelDoLocal,
   nomeLocal,
+  RESERVAS,
   retiradaPendente,
   RETIRAM_DO_211,
   type CodigoBase,
@@ -123,12 +124,12 @@ type ArestaMapa = Edge<DadosAresta, 'rede'>
 function nosPadrao(ativos: Set<CodigoBase>): NoMapa[] {
   const { x, centroGrupo, centro } = posicoesBases()
   const nos: NoMapa[] = [
-    { id: '3256', type: 'reserva', position: { x: 40, y: 50 }, data: { alerta: true } },
+    { id: '3256', type: 'reserva', position: { x: 40, y: 50 }, data: { alerta: RESERVAS.some((r) => r.alerta) } },
     {
       id: '211',
       type: 'geral',
       position: { x: centro - LARGURA_211 / 2, y: Y_211 },
-      data: { materiais: 1874, nivel: nivelDoLocal(estoqueDoLocal('211')), ativo: ativos.size > 0 },
+      data: { materiais: estoqueDoLocal('211').length, nivel: nivelDoLocal(estoqueDoLocal('211')), ativo: ativos.size > 0 },
     },
     { id: 'j0', type: 'juncao', position: { x: centro - MEIA_JUNCAO, y: Y_TRONCO }, data: {} },
     ...GRUPOS.map((g): NoMapa => ({ id: `j-${g.id}`, type: 'juncao', position: { x: centroGrupo[g.id] - MEIA_JUNCAO, y: Y_GRUPO }, data: { rotulo: g.rotulo } })),
@@ -176,7 +177,7 @@ function Ponto({ tipo, posicao, id, alerta, desligado }: { tipo: 'source' | 'tar
   return <Handle type={tipo} position={posicao} id={id} isConnectable={false} className={classe} />
 }
 
-const TEXTO_NIVEL: Record<Nivel, string> = { ok: 'estoque normal', proximo: 'material próximo do mínimo', abaixo: 'material abaixo do mínimo' }
+const TEXTO_NIVEL: Record<Nivel, string> = { ok: 'estoque normal', proximo: 'material próximo do mínimo', abaixo: 'material abaixo do mínimo', sem: 'sem inventário lançado' }
 
 /** Prateleira de caixas; algumas posições vazias (só desenho). */
 function Prateleira({ colunas, total, semente }: { colunas: number; total: number; semente: number }) {
@@ -200,7 +201,7 @@ function No211({ data }: NodeProps<Node<Dados211, 'geral'>>) {
           <strong>211 Geral · Estoque central</strong>
           <span>Governador Valadares · {data.materiais.toLocaleString('pt-BR')} materiais</span>
         </div>
-        {data.nivel !== 'ok' && <span className={`ponto nivel-${data.nivel}`} aria-hidden="true" />}
+        {data.nivel !== 'ok' && data.nivel !== 'sem' && <span className={`ponto nivel-${data.nivel}`} aria-hidden="true" />}
       </div>
       <div className="estoque-central">
         <Prateleira colunas={18} total={54} semente={3} />
@@ -223,6 +224,14 @@ function No211({ data }: NodeProps<Node<Dados211, 'geral'>>) {
   )
 }
 
+/** Resumo das reservas CEMIG embaixo do 3256: a mais antiga com alerta, ou quantas estão abertas. */
+function textoReservas(): string {
+  const antiga = RESERVAS.find((r) => r.alerta)
+  if (antiga) return `Reserva ${antiga.numero} há ${antiga.dias} dias`
+  if (!RESERVAS.length) return 'Nenhuma reserva CEMIG'
+  return `${RESERVAS.length} ${RESERVAS.length === 1 ? 'reserva CEMIG' : 'reservas CEMIG'}`
+}
+
 function NoReserva({ data }: NodeProps<Node<DadosReserva, 'reserva'>>) {
   return (
     <div className="no-reserva">
@@ -240,7 +249,7 @@ function NoReserva({ data }: NodeProps<Node<DadosReserva, 'reserva'>>) {
       </div>
       <div className="no-rotulo">
         <span>3256 · Almoxarifado geral</span>
-        <span className="sec">{data.alerta ? 'Reserva RES-0057 há 34 dias' : '4 reservas CEMIG'}</span>
+        <span className="sec">{textoReservas()}</span>
       </div>
       <Ponto tipo="source" posicao={Position.Right} />
     </div>
@@ -351,6 +360,9 @@ function Legenda() {
       </span>
       <span>
         <i className="nivel-abaixo" /> Abaixo do mínimo
+      </span>
+      <span>
+        <i className="nivel-sem" /> Sem inventário
       </span>
       <span>
         <i className="linha" /> Despacho a caminho
