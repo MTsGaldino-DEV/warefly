@@ -92,7 +92,8 @@ select is((select count(*) from perfis)::int, 6, 'trigger cria um perfil por usu
 select is((select nome from perfis where id = tests.u('VICTOR')), 'Victor', 'nome do perfil vem do metadata');
 
 update perfis set papel = 'admin'  where id = tests.u('ADMIN');
-update perfis set papel = 'gestao' where id = tests.u('GESTAO');
+-- A gerência deixou de existir (15/10): este usuário passa a ser o operador do 211
+insert into atribuicoes (almox_id, usuario_id, funcao) values (tests.a('211'), tests.u('GESTAO'), 'operador');
 
 insert into atribuicoes (almox_id, usuario_id, funcao)
 select tests.a(c), tests.u(u), f::funcao_atribuicao
@@ -196,7 +197,7 @@ select tests.como('C211');
 select is((select count(*) from v_saldo)::int, 4, 'responsável do 211 vê 211 e bases');
 reset role;
 select tests.como('GESTAO');
-select is((select count(*) from v_saldo)::int, 4, 'gestão vê tudo');
+select is((select count(*) from v_saldo)::int, 4, 'operador do 211 vê o 211 e as bases');
 reset role;
 select tests.como('OPER');
 select is((select count(*) from v_saldo)::int, 0, 'usuário sem atribuição não vê saldo');
@@ -586,7 +587,7 @@ select tests.como('VICTOR');
 select ok((select count(*) from storage.objects where name like tests.id('rem1') || '/%') >= 1, 'destino vê a foto');
 reset role;
 select tests.como('GESTAO');
-select ok((select count(*) from storage.objects where name like tests.id('rem1') || '/%') >= 1, 'gestão vê a foto');
+select ok((select count(*) from storage.objects where name like tests.id('rem1') || '/%') >= 1, 'operador do 211 vê a foto');
 reset role;
 
 -- ---------------------------------------------------------------------
