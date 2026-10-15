@@ -25,13 +25,13 @@ import {
   type CodigoLocal,
   type Despacho,
   type Equipe,
-  type Nivel,
+  type NivelItem,
   type Retirada,
   type Solicitacao,
 } from './exemplo'
 import type { DocumentoGuia } from './Guia'
 import { MOLA } from './movimento'
-import { ROTULO_SITUACAO, SELO_CAPACIDADE, subtituloLocal, TEXTO_CAPACIDADE, TOM_NIVEL, TOM_SITUACAO, type TomTrilho } from './rotulos'
+import { ROTULO_SITUACAO, SELO_CAPACIDADE, SELO_NIVEL, subtituloLocal, TEXTO_CAPACIDADE, TEXTO_NIVEL, TOM_NIVEL, TOM_SITUACAO, type TomTrilho } from './rotulos'
 
 // ---------------------------------------------------------------------------
 // Ícones de traço (16px, cor do texto). Decorativos: o nome vem do aria-label do botão.
@@ -114,11 +114,13 @@ export function Indicadores() {
           <div>
             <div className="indicador-valor">
               <Contador valor={k.valor} />
-              <span className={`seta-tendencia ${k.tom}`} aria-label={k.subindo ? 'subindo' : 'caindo'}>
-                <svg viewBox="0 0 12 12" aria-hidden="true">
-                  <path d={k.subindo ? 'M3 9l6-6M4.5 3H9v4.5' : 'M3 3l6 6M9 4.5V9H4.5'} />
-                </svg>
-              </span>
+              {k.barras.length > 0 && (
+                <span className={`seta-tendencia ${k.tom}`} aria-label={k.subindo ? 'subindo' : 'caindo'}>
+                  <svg viewBox="0 0 12 12" aria-hidden="true">
+                    <path d={k.subindo ? 'M3 9l6-6M4.5 3H9v4.5' : 'M3 3l6 6M9 4.5V9H4.5'} />
+                  </svg>
+                </span>
+              )}
             </div>
             <div className="indicador-legenda">{k.legenda}</div>
           </div>
@@ -561,11 +563,15 @@ function CartaoGrafico({
 }
 
 export function CartoesGraficos() {
-  const media = COBERTURA_BASES.reduce((t, p) => t + p.dias, 0) / COBERTURA_BASES.length
-  const boas = Math.round((COBERTURA_BASES.filter((p) => p.dias >= COBERTURA_BOA).length / COBERTURA_BASES.length) * 100)
+  const temCobertura = COBERTURA_BASES.length > 0
+  const media = temCobertura ? COBERTURA_BASES.reduce((t, p) => t + p.dias, 0) / COBERTURA_BASES.length : 0
+  const boas = temCobertura ? Math.round((COBERTURA_BASES.filter((p) => p.dias >= COBERTURA_BOA).length / COBERTURA_BASES.length) * 100) : 0
+  const entregue = ENTREGAS.entregue.reduce((t, v) => t + v, 0)
+  const solicitado = ENTREGAS.solicitado.reduce((t, v) => t + v, 0)
+  const atendido = solicitado ? Math.round((entregue / solicitado) * 100) : 0
   return (
     <motion.div className="cartoes-graficos" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, ...MOLA }}>
-      <CartaoGrafico titulo="Cobertura de estoque das bases" valor={media} casas={0} unidade="dias em média" rotulo={`Bases com ${COBERTURA_BOA} dias ou mais`} pct={boas} tom={boas < 60 ? 'alerta' : 'ok'}>
+      <CartaoGrafico titulo="Cobertura de estoque das bases" valor={media} casas={0} unidade="dias em média" rotulo={`Bases com ${COBERTURA_BOA} dias ou mais`} pct={boas} tom={temCobertura && boas < 60 ? 'alerta' : 'ok'}>
         <div className="legenda-grafico" aria-label="Legenda da cobertura">
           <span>
             <i className="critica" /> Crítica: menos de {COBERTURA_CRITICA} dias
@@ -577,10 +583,10 @@ export function CartoesGraficos() {
             <i className="boa" /> Boa: {COBERTURA_BOA} dias ou mais
           </span>
         </div>
-        <GraficoCobertura />
+        {temCobertura ? <GraficoCobertura /> : <p className="vazio-v2">A cobertura aparece depois do inventário das bases e das primeiras saídas.</p>}
       </CartaoGrafico>
-      <CartaoGrafico titulo="Entregas às bases" valor={1284} unidade="itens entregues" rotulo="Atendido" pct={92} tom="ok">
-        <GraficoLinhaV2 />
+      <CartaoGrafico titulo="Entregas às bases" valor={entregue} unidade="itens entregues" rotulo="Atendido" pct={atendido} tom="ok">
+        {ENTREGAS.entregue.length > 1 ? <GraficoLinhaV2 /> : <p className="vazio-v2">Nenhuma entrega às bases ainda.</p>}
       </CartaoGrafico>
     </motion.div>
   )
@@ -812,7 +818,7 @@ function LinhaLocal({ codigo, nome, indice, voltar, onAbrir }: { codigo: CodigoL
     <motion.button type="button" className="linha-simples" onClick={() => onAbrir({ tipo: 'local', codigo, voltar })} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: indice * 0.03 }}>
       <span className={`bloco-mini nivel-${nivel}${codigo === '211' ? ' geral' : ''}`} aria-hidden="true" />
       <span className="corta">{nome}</span>
-      {nivel !== 'ok' && <span className={`selo ${nivel === 'abaixo' ? 'alerta' : 'atencao'}`}>{nivel === 'abaixo' ? 'Abaixo do mínimo' : 'Próximo do mínimo'}</span>}
+      {nivel !== 'ok' && <span className={`selo ${SELO_NIVEL[nivel]}`}>{TEXTO_NIVEL[nivel]}</span>}
       <span className="mono sec">{codigo}</span>
       <Icone nome="seguir" />
     </motion.button>
@@ -825,7 +831,7 @@ function ConteudoDaGaveta({ conteudo, onAbrir, onAmpliar, onImprimirGuia, solici
       const linhas = estoqueDoLocal(conteudo.codigo)
       const abaixo = linhas.filter((l) => nivelDoItem(l) === 'abaixo').length
       const proximo = linhas.filter((l) => nivelDoItem(l) === 'proximo').length
-      const ordem: Record<Nivel, number> = { abaixo: 0, proximo: 1, ok: 2 }
+      const ordem: Record<NivelItem, number> = { abaixo: 0, proximo: 1, ok: 2 }
       const ordenadas = [...linhas].sort((a, b) => ordem[nivelDoItem(a)] - ordem[nivelDoItem(b)])
       return (
         <>
@@ -850,6 +856,7 @@ function ConteudoDaGaveta({ conteudo, onAbrir, onAmpliar, onImprimirGuia, solici
             </div>
           </div>
           <div className="lista-estoque">
+            {ordenadas.length === 0 && <p className="vazio-v2">Sem inventário lançado neste local. Lance a contagem em Administração › Inventário.</p>}
             {ordenadas.map((l, i) => {
               const pct = Math.min(100, Math.round((l.saldo / (l.minimo * 2)) * 100))
               const nivel = nivelDoItem(l)
@@ -902,6 +909,7 @@ function ConteudoDaGaveta({ conteudo, onAbrir, onAmpliar, onImprimirGuia, solici
           <section className="grupo-lista">
             <h3>Para bases</h3>
             <div className="lista-simples">
+              {despachos.length === 0 && <p className="vazio-v2">Nenhum despacho para base em andamento.</p>}
               {despachos.map((d) => (
                 <div key={d.id} className="linha-cartao">
                   <div className="linha-estoque-topo">
@@ -927,6 +935,7 @@ function ConteudoDaGaveta({ conteudo, onAbrir, onAmpliar, onImprimirGuia, solici
           <section className="grupo-lista">
             <h3>Retirada no local</h3>
             <div className="lista-simples">
+              {retiradas.length === 0 && <p className="vazio-v2">Nenhuma retirada no local.</p>}
               {retiradas.map((r) => (
                 <div key={r.id} className="linha-cartao">
                   <div className="linha-estoque-topo">
@@ -960,6 +969,7 @@ function ConteudoDaGaveta({ conteudo, onAbrir, onAmpliar, onImprimirGuia, solici
         <>
           <p className="explica">Reserva é a carteira de material que a CEMIG autorizou retirar no 3256. Mostra o saldo que ainda pode ser retirado, não o que existe fisicamente lá.</p>
           <div className="lista-simples">
+            {RESERVAS.length === 0 && <p className="vazio-v2">Nenhuma reserva CEMIG lançada.</p>}
             {RESERVAS.map((r, i) => {
               const autorizado = r.itens.reduce((t, x) => t + x.autorizado, 0)
               const retirado = r.itens.reduce((t, x) => t + x.retirado, 0)
@@ -1046,6 +1056,7 @@ function ConteudoDaGaveta({ conteudo, onAbrir, onAmpliar, onImprimirGuia, solici
     case 'divergencias':
       return (
         <div className="lista-simples">
+          {DIVERGENCIAS.length === 0 && <p className="vazio-v2">Nenhuma divergência aberta.</p>}
           {DIVERGENCIAS.map((d, i) => (
             <div key={i} className="linha-cartao">
               <div className="linha-estoque-topo">

@@ -1,5 +1,95 @@
 import { describe, expect, it } from 'vitest'
-import { atendimento, BASES, basesPadrao, capacidade, colaborador, EQUIPES, equipeDe, podeRetirar, validarEquipe, DESPACHOS, despachoDaSolicitacao, CAIXAS_MEDIDOR, equipesDaOrigem, estoqueDoCarro, emCaixas, estoqueDoLocal, GRUPOS, lerCodigo, nivelDoItem, nivelDoLocal, RESERVAS, RETIRADAS, retiradaPendente, retiradasDaMatricula, validarAnexo, saldoReserva, SOLICITACOES, type LinhaEstoque } from './exemplo'
+import {
+  atendimento,
+  BASES,
+  basesPadrao,
+  capacidade,
+  CAIXAS_MEDIDOR,
+  colaborador,
+  COLABORADORES,
+  COBERTURA_BASES,
+  DESPACHOS,
+  despachoDaSolicitacao,
+  DIVERGENCIAS,
+  emCaixas,
+  equipeDe,
+  EQUIPES,
+  equipesDaOrigem,
+  estoqueDoCarro,
+  estoqueDoLocal,
+  GRUPOS,
+  lerCodigo,
+  nivelDoItem,
+  nivelDoLocal,
+  podeRetirar,
+  RESERVAS,
+  RETIRADAS,
+  retiradaPendente,
+  retiradasDaMatricula,
+  saldoReserva,
+  SOLICITACOES,
+  validarAnexo,
+  validarEquipe,
+  type Caixas,
+  type Colaborador,
+  type Equipe,
+  type LinhaEstoque,
+  type Retirada,
+  type Solicitacao,
+} from './exemplo'
+
+// Dados de teste: só existem aqui. A tela começa vazia e passa a ler do banco.
+const serie = (prefixo: string, inicio: number, n: number) => Array.from({ length: n }, (_, i) => `${prefixo}${String(inicio + i).padStart(6, '0')}`)
+const CAIXAS: Caixas = {
+  'CX-0418': { codigo: '10052311', seriais: serie('MF26', 418001, 16) },
+  'CX-0419': { codigo: '10052311', seriais: serie('MF26', 419001, 16) },
+  'CX-0420': { codigo: '10052311', seriais: serie('MF26', 420001, 12) },
+  'CX-0422': { codigo: '10052311', seriais: serie('MF26', 422001, 9) },
+}
+const PESSOAS: Colaborador[] = [
+  { matricula: '52210', nome: 'Pessoa A', supervisor: 'Pedro' },
+  { matricula: '49301', nome: 'Pessoa B', supervisor: 'Victor' },
+  { matricula: '49422', nome: 'Pessoa C', supervisor: 'Victor' },
+  { matricula: '53004', nome: 'Pessoa D', supervisor: 'Pedro' },
+  { matricula: '55377', nome: 'Pessoa E', supervisor: 'Pedro' },
+]
+const EQ: Equipe[] = [
+  { id: 'e1', codigo: 'MOTO 01', tipo: 'Moto', supervisor: 'Pedro', integrantes: ['52210'], bases: basesPadrao('Moto', 'Pedro'), placa: 'RTA2B09', origem: '211' },
+  { id: 'e3', codigo: 'MULT 01', tipo: 'Moto/Multifuncional', supervisor: 'Victor', integrantes: ['49301', '49422'], bases: basesPadrao('Moto/Multifuncional', 'Victor'), placa: 'PUV7C33', origem: 'MNT' },
+  { id: 'e6', codigo: 'MULT 04', tipo: 'Moto/Multifuncional', supervisor: 'Pedro', integrantes: ['53004'], bases: basesPadrao('Moto/Multifuncional', 'Pedro'), placa: 'SCD3A17', origem: 'ITN' },
+]
+const ret = (id: string, numero: string, equipe: string, retiradoPor: string, data: string, itens: Retirada['itens'], comTermo = false): Retirada => ({
+  id, numero, equipe, local: '211', retiradoPor, atendidoPor: 'Atendente', data, itens,
+  guiaAssinada: comTermo ? { arquivo: 'termo.pdf', formato: 'pdf', anexadoEm: data, anexadoPor: 'Atendente' } : undefined,
+})
+const RET: Retirada[] = [
+  ret('r1', 'DSP-2026-00010', 'e1', '52210', '13/10/2026 14:05', [{ material: 'Fita', codigo: '10030117', unidade: 'rl', qtd: 2 }]),
+  ret('r2', 'DSP-2026-00009', 'e3', '49301', '13/10/2026 09:40', [
+    { material: 'Lacre', codigo: '10018832', unidade: 'un', qtd: 24 },
+    { material: 'Medidor', codigo: '10052311', unidade: 'un', qtd: 12, seriais: CAIXAS['CX-0420'].seriais },
+  ]),
+  ret('r4', 'DSP-2026-00007', 'e1', '52210', '11/10/2026 10:22', [{ material: 'Fita', codigo: '10030117', unidade: 'rl', qtd: 1 }], true),
+]
+const SOL: Solicitacao = {
+  id: 's1', numero: 'SOL-0001', base: 'RSP', situacao: 'aguardando', aberta: '13/10/2026 07:52',
+  itens: [
+    { material: 'Cabo', codigo: '10061204', unidade: 'm', solicitado: 120, disponivel: 84, consumo90: 310, saldoBase: 22, decisao: 'Reduzido', aprovado: 84 },
+    { material: 'Conector', codigo: '10044870', unidade: 'pç', solicitado: 40, disponivel: 200, consumo90: 90, saldoBase: 5, decisao: 'Aprovado', aprovado: 40 },
+    { material: 'Haste', codigo: '10027745', unidade: 'pç', solicitado: 5, disponivel: 0, consumo90: 8, saldoBase: 1, decisao: 'Sem saldo', aprovado: 0 },
+  ],
+}
+
+describe('sem dados de exemplo', () => {
+  it('as listas começam vazias até virem do banco', () => {
+    for (const lista of [COLABORADORES, EQUIPES, SOLICITACOES, DESPACHOS, RESERVAS, DIVERGENCIAS, RETIRADAS, COBERTURA_BASES]) expect(lista).toEqual([])
+    expect(CAIXAS_MEDIDOR).toEqual({})
+  })
+  it('local sem inventário fica sem cor de situação', () => {
+    for (const b of BASES) expect(nivelDoLocal(estoqueDoLocal(b.codigo))).toBe('sem')
+    expect(nivelDoLocal(estoqueDoLocal('211'))).toBe('sem')
+  })
+})
+
 
 const linha = (saldo: number, minimo: number): LinhaEstoque => ({ material: 'Fita', codigo: '1', unidade: 'rl', saldo, minimo })
 
@@ -19,9 +109,8 @@ describe('nível do estoque em relação ao mínimo', () => {
     expect(nivelDoLocal([linha(100, 20), linha(22, 20), linha(5, 20)])).toBe('abaixo')
     expect(nivelDoLocal([linha(100, 20)])).toBe('ok')
   })
-  it('o exemplo mostra as três cores no mapa', () => {
-    const niveis = new Set(BASES.map((b) => nivelDoLocal(estoqueDoLocal(b.codigo))))
-    expect(niveis).toEqual(new Set(['ok', 'proximo', 'abaixo']))
+  it('local sem material lançado não tem nível', () => {
+    expect(nivelDoLocal([])).toBe('sem')
   })
 })
 
@@ -33,25 +122,17 @@ describe('grupos de sub-bases', () => {
 })
 
 describe('despacho', () => {
-  it('números de despacho são únicos entre bases e retiradas e seguem DSP-AAAA-NNNNN', () => {
-    const numeros = [...DESPACHOS.map((d) => d.numero), ...RETIRADAS.map((r) => r.numero)]
-    expect(new Set(numeros).size).toBe(numeros.length)
-    for (const n of numeros) expect(n).toMatch(/^DSP-\d{4}-\d{5}$/)
-  })
-  it('despacho gerado da solicitação leva só o que foi aprovado', () => {
-    const s = SOLICITACOES[0]
-    const d = despachoDaSolicitacao(s)
-    expect(d.base).toBe(s.base)
-    expect(d.solicitacao).toBe(s.numero)
-    expect(d.itens.map((i) => i.codigo)).toEqual(['10061204', '10044870', '10052311', '10030117'])
+  it('despacho gerado da solicitação leva só o que foi aprovado, com quem enviou', () => {
+    const d = despachoDaSolicitacao(SOL, undefined, 'DSP-2026-00001', 'Usuário logado')
+    expect(d).toMatchObject({ base: 'RSP', solicitacao: 'SOL-0001', numero: 'DSP-2026-00001', enviadoPor: 'Usuário logado' })
+    expect(d.itens.map((i) => i.codigo)).toEqual(['10061204', '10044870'])
     expect(d.itens[0]).toMatchObject({ qtd: 84, unidade: 'm' })
   })
   it('quantidade escolhida na análise substitui a sugestão e zero sai do despacho', () => {
-    const s = SOLICITACOES[0]
-    const d = despachoDaSolicitacao(s, { '10061204': 50, '10044870': 0, '10052311': 0, '10030117': 20 })
+    const d = despachoDaSolicitacao(SOL, { '10061204': 50, '10044870': 0, '10027745': 3 })
     expect(d.itens.map((i) => [i.codigo, i.qtd])).toEqual([
       ['10061204', 50],
-      ['10030117', 20],
+      ['10027745', 3],
     ])
   })
 })
@@ -65,8 +146,7 @@ describe('atendimento da solicitação', () => {
 })
 
 describe('reserva CEMIG', () => {
-  it('saldo a retirar é o autorizado menos o retirado, nunca negativo no exemplo', () => {
-    for (const r of RESERVAS) for (const i of r.itens) expect(saldoReserva(i)).toBeGreaterThanOrEqual(0)
+  it('saldo a retirar é o autorizado menos o retirado', () => {
     expect(saldoReserva({ material: 'x', codigo: '1', unidade: 'm', autorizado: 2000, retirado: 1650 })).toBe(350)
   })
 })
@@ -84,32 +164,29 @@ describe('capacidade de atender a solicitação com o estoque de hoje', () => {
     expect(capacidade({ itens: [item(10, 0)] })).toBe('nenhum')
     expect(capacidade({ itens: [item(10, 10, 'Cancelado'), item(5, 0)] })).toBe('nenhum')
   })
-  it('o exemplo tem os três casos na fila', () => {
-    const fila = SOLICITACOES.filter((s) => s.situacao === 'aguardando' || s.situacao === 'aprovada')
-    expect(new Set(fila.map(capacidade))).toEqual(new Set(['completo', 'parcial', 'nenhum']))
-  })
 })
 
 describe('leitor de código e caixas de medidor', () => {
   it('caixa traz todos os seriais dela', () => {
-    const l = lerCodigo(' cx-0420 ')
+    const l = lerCodigo(' cx-0420 ', CAIXAS)
     expect(l.tipo).toBe('caixa')
     if (l.tipo === 'caixa') expect(l.seriais).toHaveLength(12)
   })
   it('serial avulso é reconhecido e código desconhecido não', () => {
-    expect(lerCodigo('MF26420003')).toMatchObject({ tipo: 'serial', serial: 'MF26420003' })
-    expect(lerCodigo('XYZ').tipo).toBe('desconhecido')
+    expect(lerCodigo('MF26420003', CAIXAS)).toMatchObject({ tipo: 'serial', serial: 'MF26420003' })
+    expect(lerCodigo('XYZ', CAIXAS).tipo).toBe('desconhecido')
+    expect(lerCodigo('CX-0420').tipo).toBe('desconhecido')
   })
   it('cada caixa tem a sua quantidade: não existe número fixo por caixa', () => {
-    expect(lerCodigo('CX-0418')).toMatchObject({ seriais: expect.arrayContaining(['MF26418016']) })
-    const l = lerCodigo('CX-0422')
+    expect(lerCodigo('CX-0418', CAIXAS)).toMatchObject({ seriais: expect.arrayContaining(['MF26418016']) })
+    const l = lerCodigo('CX-0422', CAIXAS)
     if (l.tipo === 'caixa') expect(l.seriais).toHaveLength(9)
   })
   it('resume pela caixa: inteira, parte de uma caixa e avulsos', () => {
-    const cx18 = CAIXAS_MEDIDOR['CX-0418'].seriais
-    const cx19 = CAIXAS_MEDIDOR['CX-0419'].seriais.slice(0, 4)
-    expect(emCaixas([...cx18, ...cx19])).toBe('CX-0418 inteira (16) + 4 de CX-0419 (16)')
-    expect(emCaixas(['MF99000001'])).toBe('1 avulso')
+    const cx18 = CAIXAS['CX-0418'].seriais
+    const cx19 = CAIXAS['CX-0419'].seriais.slice(0, 4)
+    expect(emCaixas([...cx18, ...cx19], CAIXAS)).toBe('CX-0418 inteira (16) + 4 de CX-0419 (16)')
+    expect(emCaixas(['MF99000001'], CAIXAS)).toBe('1 avulso')
     expect(emCaixas([])).toBeNull()
     expect(emCaixas(undefined)).toBeNull()
   })
@@ -122,64 +199,65 @@ describe('equipes e acesso às bases', () => {
     expect(basesPadrao('Moto/Multifuncional', 'Victor')).toEqual(['MNT', 'ITB', 'CRC'])
   })
   it('todas retiram no 211 Geral; na base só se estiver liberada', () => {
-    const mult = EQUIPES.find((e) => e.codigo === 'MULT 01')!
+    const mult = EQ.find((e) => e.codigo === 'MULT 01')!
     expect(podeRetirar(mult, '211')).toBe(true)
     expect(podeRetirar(mult, 'CRC')).toBe(true)
     expect(podeRetirar(mult, 'SMS')).toBe(false)
   })
   it('matrícula traz nome, supervisão e equipe', () => {
-    expect(colaborador('52210')).toMatchObject({ nome: 'Carlos Henrique Souza', supervisor: 'Pedro' })
-    expect(equipeDe('Mat. 52210', EQUIPES)?.codigo).toBe('MOTO 01')
-    expect(colaborador('99999')).toBeUndefined()
+    expect(colaborador('52210', PESSOAS)).toMatchObject({ nome: 'Pessoa A', supervisor: 'Pedro' })
+    expect(equipeDe('Mat. 52210', EQ)?.codigo).toBe('MOTO 01')
+    expect(colaborador('99999', PESSOAS)).toBeUndefined()
+    expect(colaborador('52210')).toBeUndefined()
   })
   it('cadastro completo passa; placa em minúscula é aceita', () => {
-    expect(validarEquipe(nova, EQUIPES)).toEqual([])
+    expect(validarEquipe(nova, EQ, PESSOAS)).toEqual([])
   })
   it('cadastro incompleto diz tudo o que falta', () => {
-    const erros = validarEquipe({ ...nova, codigo: '', integrantes: [], bases: [], placa: '12', origem: '' }, EQUIPES)
+    const erros = validarEquipe({ ...nova, codigo: '', integrantes: [], bases: [], placa: '12', origem: '' }, EQ, PESSOAS)
     expect(erros).toHaveLength(5)
     expect(erros).toContain('Escolha a base de origem: onde a equipe inicia a jornada (ou o 211 Geral).')
   })
   it('não aceita código repetido nem integrante que já está em outra equipe', () => {
-    const erros = validarEquipe({ ...nova, codigo: 'moto 01', integrantes: ['52210'] }, EQUIPES)
+    const erros = validarEquipe({ ...nova, codigo: 'moto 01', integrantes: ['52210'] }, EQ, PESSOAS)
     expect(erros.some((e) => e.includes('Já existe'))).toBe(true)
     expect(erros.some((e) => e.includes('MOTO 01. Tire'))).toBe(true)
   })
   it('base de origem numa base precisa estar entre as liberadas; 211 Geral sempre vale', () => {
-    const fora = validarEquipe({ ...nova, tipo: 'Moto/Multifuncional', bases: ['RSP'], origem: 'ITN' }, EQUIPES)
+    const fora = validarEquipe({ ...nova, tipo: 'Moto/Multifuncional', bases: ['RSP'], origem: 'ITN' }, EQ, PESSOAS)
     expect(fora).toContain('A base de origem ITN precisa estar entre as bases liberadas. Marque ITN ou escolha outra base de origem.')
-    expect(validarEquipe({ ...nova, bases: ['RSP'], origem: '211' }, EQUIPES)).toEqual([])
+    expect(validarEquipe({ ...nova, bases: ['RSP'], origem: '211' }, EQ, PESSOAS)).toEqual([])
   })
   it('mapa da base mostra só as equipes com origem nela', () => {
-    expect(equipesDaOrigem('ITN', EQUIPES).map((e) => e.codigo)).toEqual(['MULT 04', 'MOTO 03'])
-    expect(equipesDaOrigem('211', EQUIPES).map((e) => e.codigo)).toEqual(['MOTO 01'])
-    for (const b of BASES) expect(equipesDaOrigem(b.codigo, EQUIPES).length).toBeGreaterThan(0)
+    expect(equipesDaOrigem('ITN', EQ).map((e) => e.codigo)).toEqual(['MULT 04'])
+    expect(equipesDaOrigem('211', EQ).map((e) => e.codigo)).toEqual(['MOTO 01'])
+    expect(equipesDaOrigem('SMS', EQ)).toEqual([])
   })
   it('equipe com origem em ITN retira em TRM, mas o veículo só aparece no mapa de ITN', () => {
-    const mult04 = EQUIPES.find((e) => e.codigo === 'MULT 04')!
+    const mult04 = EQ.find((e) => e.codigo === 'MULT 04')!
     expect(mult04.origem).toBe('ITN')
     expect(podeRetirar(mult04, 'TRM')).toBe(true)
-    expect(equipesDaOrigem('ITN', EQUIPES)).toContain(mult04)
-    expect(equipesDaOrigem('TRM', EQUIPES)).not.toContain(mult04)
+    expect(equipesDaOrigem('ITN', EQ)).toContain(mult04)
+    expect(equipesDaOrigem('TRM', EQ)).not.toContain(mult04)
   })
   it('estoque do carro soma as retiradas da equipe por material, com os seriais', () => {
-    const extra = { ...RETIRADAS.find((r) => r.id === 'r6')!, id: 'x', itens: [{ material: 'Lacre polipropileno', codigo: '10018832', unidade: 'un', qtd: 6 }] }
-    const carro = estoqueDoCarro('e3', [...RETIRADAS, extra])
+    const extra = { ...RET[1], id: 'x', itens: [{ material: 'Lacre', codigo: '10018832', unidade: 'un', qtd: 6 }] }
+    const carro = estoqueDoCarro('e3', [...RET, extra])
     expect(carro.find((i) => i.codigo === '10018832')?.qtd).toBe(24 + 6)
     const medidor = carro.find((i) => i.codigo === '10052311')
     expect(medidor?.qtd).toBe(12)
     expect(medidor?.seriais).toHaveLength(12)
-    expect(estoqueDoCarro('e16', RETIRADAS)).toEqual([])
+    expect(estoqueDoCarro('e6', RET)).toEqual([])
   })
   it('matrícula fora da lista de colaboradores é recusada', () => {
-    expect(validarEquipe({ ...nova, integrantes: ['99999'] }, EQUIPES)).toContain('Matrícula 99999 não está na lista de colaboradores.')
+    expect(validarEquipe({ ...nova, integrantes: ['99999'] }, EQ, PESSOAS)).toContain('Matrícula 99999 não está na lista de colaboradores.')
   })
 })
 
 describe('termo assinado da retirada', () => {
   it('retirada sem termo anexado fica pendente; com termo, sai da lista', () => {
-    const pendentes = RETIRADAS.filter(retiradaPendente).map((r) => r.numero)
-    expect(pendentes).toEqual(['DSP-2026-00389', 'DSP-2026-00387'])
+    const pendentes = RET.filter(retiradaPendente).map((r) => r.numero)
+    expect(pendentes).toEqual(['DSP-2026-00010', 'DSP-2026-00009'])
   })
 
   it('aceita foto ou PDF e recusa outros arquivos dizendo o que fazer', () => {
@@ -194,13 +272,13 @@ describe('termo assinado da retirada', () => {
 
 describe('retiradas por matrícula', () => {
   it('traz todas as retiradas da matrícula, da mais recente para a mais antiga', () => {
-    const extra = { ...RETIRADAS[0], id: 'x', numero: 'DSP-2026-00300', data: '01/10/2026 08:00' }
-    const lista = retiradasDaMatricula([extra, ...RETIRADAS], '52210').map((r) => r.numero)
-    expect(lista).toEqual(['DSP-2026-00389', 'DSP-2026-00383', 'DSP-2026-00300'])
+    const extra = { ...RET[0], id: 'x', numero: 'DSP-2026-00001', data: '01/10/2026 08:00' }
+    const lista = retiradasDaMatricula([extra, ...RET], '52210').map((r) => r.numero)
+    expect(lista).toEqual(['DSP-2026-00010', 'DSP-2026-00007', 'DSP-2026-00001'])
   })
 
   it('ignora pontuação na matrícula digitada', () => {
-    expect(retiradasDaMatricula(RETIRADAS, '52.210')).toHaveLength(2)
-    expect(retiradasDaMatricula(RETIRADAS, '99999')).toHaveLength(0)
+    expect(retiradasDaMatricula(RET, '52.210')).toHaveLength(2)
+    expect(retiradasDaMatricula(RET, '99999')).toHaveLength(0)
   })
 })

@@ -410,6 +410,8 @@
 .no-base { --base-cor: var(--cor-operacao); --base-forte: var(--cor-operacao-forte); width: 100px; display: flex; flex-direction: column; align-items: center; }
 .no-base.nivel-proximo { --base-cor: var(--st-atencao); --base-forte: color-mix(in srgb, var(--st-atencao) 72%, black); }
 .no-base.nivel-abaixo { --base-cor: var(--st-alerta); --base-forte: color-mix(in srgb, var(--st-alerta) 75%, black); }
+/* Local sem inventário lançado: cinza, sem cor de situação. */
+.no-base.nivel-sem { --base-cor: var(--st-neutro); --base-forte: color-mix(in srgb, var(--st-neutro) 72%, black); }
 .no-base .bloco {
   position: relative;
   display: grid;
@@ -495,6 +497,7 @@
 .legenda-mapa i { width: 8px; height: 8px; border-radius: 2px; background: var(--cor-operacao); }
 .legenda-mapa i.nivel-proximo { background: var(--st-atencao); }
 .legenda-mapa i.nivel-abaixo { background: var(--st-alerta); }
+.legenda-mapa i.nivel-sem { background: var(--st-neutro); }
 .legenda-mapa i.linha { width: 14px; height: 2px; border-radius: 1px; }
 
 /* Popover da remessa */
@@ -568,6 +571,7 @@
 .bloco-mini.nivel-proximo { background: var(--st-atencao); box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--st-atencao) 72%, black); }
 .bloco-mini.geral { background: var(--cor-211); box-shadow: inset 0 -2px 0 var(--cor-211-forte); }
 .bloco-mini.nivel-abaixo { background: var(--st-alerta); box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--st-alerta) 75%, black); }
+.bloco-mini.nivel-sem { background: var(--st-neutro); box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--st-neutro) 72%, black); }
 .grupo-lista { display: flex; flex-direction: column; gap: var(--esp-4); }
 .grupo-lista h3 { margin: 0; padding-left: var(--esp-2); font-size: 0.68rem; font-weight: var(--peso-forte); letter-spacing: .06em; text-transform: uppercase; color: var(--texto-2); }
 .linha-cartao .botao-v2.baixo { min-height: 34px; padding: var(--esp-3); margin-top: var(--esp-2); }

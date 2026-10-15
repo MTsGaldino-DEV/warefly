@@ -40,6 +40,7 @@ import {
   type ItemRetirada,
   type ItemSolicitacao,
   type Nivel,
+  type NivelItem,
   type Equipe,
   type Retirada,
   type Solicitacao,
@@ -716,7 +717,7 @@ function JanelaLocal({ codigo, onAbrir, onFechar, despachos }: Acoes & { codigo:
   const [busca, setBusca] = useState('')
   const [ordem, setOrdem] = useState<OrdemEstoque>('situacao')
   const linhas = estoqueDoLocal(codigo)
-  const peso: Record<Nivel, number> = { abaixo: 0, proximo: 1, ok: 2 }
+  const peso: Record<NivelItem, number> = { abaixo: 0, proximo: 1, ok: 2 }
   const termo = busca.trim().toLowerCase()
   const visiveis = linhas
     .filter((l) => filtro === 'todos' || nivelDoItem(l) === filtro)
@@ -824,7 +825,8 @@ function JanelaLocal({ codigo, onAbrir, onFechar, despachos }: Acoes & { codigo:
               </motion.div>
             )
           })}
-          {visiveis.length === 0 && <p className="vazio-v2">Nenhum material com esse filtro. Limpe a busca ou escolha outra situação.</p>}
+          {linhas.length === 0 && <p className="vazio-v2">Sem inventário lançado neste local. Lance a contagem em Administração › Inventário.</p>}
+          {linhas.length > 0 && visiveis.length === 0 && <p className="vazio-v2">Nenhum material com esse filtro. Limpe a busca ou escolha outra situação.</p>}
         </div>
       </div>
     </>
