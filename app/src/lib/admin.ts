@@ -1,9 +1,23 @@
-/** Área de administração: abre pelo menu da conta (ícone de perfil) e é só do admin. */
+/**
+ * Área de administração: abre pelo menu da conta (ícone de perfil). O admin vê
+ * todas as sub-abas; a gestora do almoxarifado vê só as marcadas com `gestora`.
+ */
 
 export const ROTA_ADMIN = '/admin'
 
-/** Sub-abas da administração. Por enquanto só Automações. */
-export const ABAS_ADMIN = [{ para: '/admin/automacoes', rotulo: 'Automações' }] as const
+/** Sub-abas da administração. */
+export const ABAS_ADMIN = [
+  { para: '/admin/inventario', rotulo: 'Inventário', gestora: true },
+  { para: '/admin/automacoes', rotulo: 'Automações', gestora: false },
+  { para: '/admin/sobre', rotulo: 'Sobre', gestora: false },
+] as const
+
+export type AbaAdmin = (typeof ABAS_ADMIN)[number]
+
+/** Sub-abas que o usuário vê; vazio = sem acesso à administração. */
+export function abasVisiveis(p: { ehAdmin: boolean; ehGestora: boolean }): AbaAdmin[] {
+  return ABAS_ADMIN.filter((a) => p.ehAdmin || (p.ehGestora && a.gestora))
+}
 
 export type Automacao = {
   id: string

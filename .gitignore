@@ -31,3 +31,6 @@ app/playwright-report/
 
 # Cópia de outro conector, só referência local
 docs/referencia/
+
+# Backups do banco remoto (dados reais)
+backup-*.sql

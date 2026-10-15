@@ -36,7 +36,7 @@ const idDocumento = (d: DocumentoGuia) => (d.tipo === 'despacho' ? d.despacho.id
  * Menus abrem numa gaveta de vidro por cima do mapa; o que precisa de mais espaço abre numa janela grande no centro.
  */
 export function Armazem() {
-  const { perfil, rotuloPerfil, sair, ehAdmin } = useSessao()
+  const { perfil, rotuloPerfil, sair, ehAdmin, ehGestora } = useSessao()
   const navegar = useNavigate()
   const [gaveta, setGaveta] = useState<ConteudoGaveta | null>(null)
   // Sub-base aberta no mapa (mostra as equipes com origem nela); null = mapa geral.
@@ -177,7 +177,7 @@ export function Armazem() {
                   <motion.div className="vidro menu-conta" initial={{ opacity: 0, y: -6, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6, scale: 0.97 }}>
                     <strong>{perfil?.nome}</strong>
                     <span className="sec peq">{rotuloPerfil}</span>
-                    {ehAdmin && (
+                    {(ehAdmin || ehGestora) && (
                       <button type="button" className="botao-v2 claro" onClick={() => navegar(ROTA_ADMIN)}>
                         Administração
                       </button>

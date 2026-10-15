@@ -5,11 +5,13 @@ import { SessaoProvider, useSessao } from './auth/SessaoContext'
 import { Layout } from './components/Layout'
 import { Aviso, Carregando, Marca } from './components/ui'
 import { Administracao } from './pages/admin/Administracao'
+import { Inventario } from './pages/admin/Inventario'
 import { AdminAlmoxarifados } from './pages/admin/Almoxarifados'
 import { Automacoes } from './pages/admin/Automacoes'
 import { ImportarMateriais } from './pages/admin/ImportarMateriais'
 import { AdminMateriais, AdminUnidades } from './pages/admin/Materiais'
 import { SaldoInicial } from './pages/admin/SaldoInicial'
+import { Sobre } from './pages/admin/Sobre'
 import { RequisicaoMaterial } from './pages/automacao/RequisicaoMaterial'
 import { AdminUsuarios } from './pages/admin/Usuarios'
 import { Login } from './pages/Login'
@@ -69,10 +71,12 @@ export default function App() {
               <Route path="admin/materiais/importar" element={<SoAdmin><ImportarMateriais /></SoAdmin>} />
               <Route path="admin/unidades" element={<SoAdmin><AdminUnidades /></SoAdmin>} />
               <Route path="admin/saldo-inicial" element={<SoAdmin><SaldoInicial /></SoAdmin>} />
-              <Route path="admin" element={<SoAdmin><Administracao /></SoAdmin>}>
-                <Route index element={<Navigate to="automacoes" replace />} />
+              {/* Administração: admin vê tudo; a gestora, só o Inventário (a própria tela filtra). */}
+              <Route path="admin" element={<Administracao />}>
+                <Route path="inventario" element={<Inventario />} />
                 <Route path="automacoes" element={<Automacoes />} />
                 <Route path="automacoes/requisicao-material" element={<RequisicaoMaterial />} />
+                <Route path="sobre" element={<Sobre />} />
               </Route>
               {/* Endereço antigo da automação, antes da Administração. */}
               <Route path="automacao/requisicao-material" element={<Navigate to="/admin/automacoes/requisicao-material" replace />} />

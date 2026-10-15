@@ -37,5 +37,5 @@ test('quem não é admin não vê a Administração', async ({ page }) => {
   await abrirConta(page)
   await expect(page.getByRole('button', { name: 'Administração' })).toHaveCount(0)
   await page.goto('/admin/automacoes')
-  await expect(page.getByText('Acesso restrito ao administrador.')).toBeVisible()
+  await expect(page.getByText('Acesso restrito ao administrador e à gestão do almoxarifado.')).toBeVisible()
 })

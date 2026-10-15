@@ -446,7 +446,7 @@ td.acoes-celula { text-align: right; white-space: nowrap; }
   min-height: 100dvh;
   display: grid;
   place-items: center;
-  padding: var(--esp-8) var(--esp-8) var(--esp-11);
+  padding: var(--esp-8);
   background: var(--cor-estrutura);
 }
 .login-cartao {
@@ -457,14 +457,6 @@ td.acoes-celula { text-align: right; white-space: nowrap; }
   padding: var(--esp-11) var(--esp-10);
 }
 .login-cartao .marca { color: var(--cor-estrutura); }
-.login-rodape {
-  position: absolute;
-  inset-inline: 0;
-  bottom: var(--esp-5);
-  text-align: center;
-  font-size: var(--tam-legenda);
-  color: color-mix(in srgb, var(--cor-fundo) 40%, transparent);
-}
 
 /* ---------- Impressão ---------- */
 @media print {

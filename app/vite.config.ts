@@ -4,7 +4,7 @@ import { execSync } from 'node:child_process'
 import { defineConfig } from 'vite'
 
 /**
- * Commit do build, para o pé da tela de login. No Docker não há .git:
+ * Commit do build, para a aba Sobre da Administração. No Docker não há .git:
  * o commit chega pela variável WAREFLY_COMMIT (build arg do docker-compose).
  */
 function commitAtual(): string | null {

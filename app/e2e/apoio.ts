@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx'
 
 export const USUARIOS = {
   admin: { email: 'admin@warefly.test', senha: 'Senha123!', nome: 'Ana Admin' },
+  // Era a gerência (perfil extinto em 15/10); agora é o operador do 211.
   gestao: { email: 'gestao@warefly.test', senha: 'Senha123!', nome: 'Gil Gestão' },
   carlos: { email: 'carlos@warefly.test', senha: 'Senha123!', nome: 'Carlos 211' },
   victor: { email: 'victor@warefly.test', senha: 'Senha123!', nome: 'Victor' },
