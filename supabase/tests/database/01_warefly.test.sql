@@ -92,7 +92,8 @@ select is((select count(*) from perfis)::int, 6, 'trigger cria um perfil por usu
 select is((select nome from perfis where id = tests.u('VICTOR')), 'Victor', 'nome do perfil vem do metadata');
 
 update perfis set papel = 'admin'  where id = tests.u('ADMIN');
-update perfis set papel = 'gestao' where id = tests.u('GESTAO');
+-- A gerência deixou de existir (15/10): este usuário passa a ser o operador do 211
+insert into atribuicoes (almox_id, usuario_id, funcao) values (tests.a('211'), tests.u('GESTAO'), 'operador');
 
 insert into atribuicoes (almox_id, usuario_id, funcao)
 select tests.a(c), tests.u(u), f::funcao_atribuicao
@@ -196,7 +197,7 @@ select tests.como('C211');
 select is((select count(*) from v_saldo)::int, 4, 'responsável do 211 vê 211 e bases');
 reset role;
 select tests.como('GESTAO');
-select is((select count(*) from v_saldo)::int, 4, 'gestão vê tudo');
+select is((select count(*) from v_saldo)::int, 4, 'operador do 211 vê o 211 e as bases');
 reset role;
 select tests.como('OPER');
 select is((select count(*) from v_saldo)::int, 0, 'usuário sem atribuição não vê saldo');
@@ -374,10 +375,19 @@ select lives_ok(
   'origem dá baixa em trânsito de 1');
 select is((select status from remessas where id = tests.id('rem1')), 'com_divergencia'::status_remessa, 'ainda falta tratar 1');
 reset role;
+-- Opção B (15/10): a base justifica; a gestão aplica o tratamento
 select tests.como('VICTOR');
+select throws_ok(
+  $$ select rpc_tratar_divergencia(tests.item('rem1', 'PARAF'), 'chegou_depois', 1, 'Achado na caixa do cabo') $$,
+  '42501', null, 'supervisor não aplica o tratamento');
+select lives_ok(
+  $$ select rpc_justificar_divergencia(tests.item('rem1', 'PARAF'), 'Achado na caixa do cabo') $$,
+  'supervisor justifica a falta');
+reset role;
+select tests.como('C211');
 select lives_ok(
   $$ select rpc_tratar_divergencia(tests.item('rem1', 'PARAF'), 'chegou_depois', 1, 'Achado na caixa do cabo') $$,
-  'destino registra que 1 chegou depois');
+  'gestão registra que 1 chegou depois');
 reset role;
 select is((select status from remessas where id = tests.id('rem1')), 'encerrada'::status_remessa, 'remessa encerrada');
 select is((select status from pedidos where id = tests.id('ped1')), 'encerrado'::status_pedido, 'pedido encerrado');
@@ -431,10 +441,12 @@ select is(
   rpc_registrar_recebimento(tests.id('rem2'), fn_hoje(), 'Zé de Itabirinha', tests.foto(tests.id('rem2'), 'VICTOR'),
     tests.j('[{"material_id":"PARAF","qtd_recebida":5},{"material_id":"CABO","qtd_recebida":2,"motivo_divergencia":"avaria"}]')),
   'com_divergencia'::status_remessa, 'mesmo supervisor recebe a transferência (entre bases)');
+reset role;
+select tests.como('C211');
 select lives_ok(
   $$ with t as (select rpc_tratar_divergencia(tests.item('rem2', 'CABO'), 'reenvio', 0.5, 'Pedaço avariado, mando outro') as id)
      insert into tests.ctx select 'trat1', id from t $$,
-  'origem reenvia o cabo avariado');
+  'gestão reenvia o cabo avariado pela origem');
 reset role;
 insert into tests.ctx select 'rem3', remessa_gerada_id from divergencia_tratamentos where id = tests.id('trat1');
 select is((select status from remessas where id = tests.id('rem2')), 'encerrada'::status_remessa, 'reenvio resolve a divergência original');
@@ -465,10 +477,12 @@ select is(
   'com_divergencia'::status_remessa, 'item fora da guia entra como sobra');
 select is((select motivo_divergencia from remessa_itens where id = tests.item('rem4', 'CONEC')), 'sobra'::motivo_divergencia, 'motivo sobra');
 reset role;
-select tests.como('VICTOR');
+select tests.como('C211');
 select throws_like(
   $$ select rpc_tratar_divergencia(tests.item('rem4', 'CONEC'), 'ajuste_origem', 1, 'Mandei a mais') $$,
   'Saldo insuficiente em Itabirinha%', 'ajuste na origem respeita o saldo');
+reset role;
+select tests.como('VICTOR');
 select throws_ok(
   $$ select rpc_registrar_ajuste(tests.a('ITB'), 'inventario', 'Conector sem registro no sistema', tests.j('[{"material_id":"CONEC","qtd_contada":1}]')) $$,
   '42501', null, 'supervisor não ajusta o estoque da própria base');
@@ -480,8 +494,6 @@ select throws_like(
 select lives_ok(
   $$ select rpc_registrar_ajuste(tests.a('ITB'), 'inventario', 'Conector sem registro no sistema', tests.j('[{"material_id":"CONEC","qtd_contada":1}]')) $$,
   'gestão do 211 ajusta o estoque da base');
-reset role;
-select tests.como('VICTOR');
 select lives_ok(
   $$ select rpc_tratar_divergencia(tests.item('rem4', 'CONEC'), 'ajuste_origem', 1, 'Mandei a mais sem registrar') $$,
   'ajuste na origem fecha a sobra');
@@ -586,7 +598,7 @@ select tests.como('VICTOR');
 select ok((select count(*) from storage.objects where name like tests.id('rem1') || '/%') >= 1, 'destino vê a foto');
 reset role;
 select tests.como('GESTAO');
-select ok((select count(*) from storage.objects where name like tests.id('rem1') || '/%') >= 1, 'gestão vê a foto');
+select ok((select count(*) from storage.objects where name like tests.id('rem1') || '/%') >= 1, 'operador do 211 vê a foto');
 reset role;
 
 -- ---------------------------------------------------------------------

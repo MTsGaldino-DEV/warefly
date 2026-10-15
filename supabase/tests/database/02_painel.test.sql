@@ -29,7 +29,8 @@ insert into auth.users (id, email, raw_user_meta_data, aud, role) values
   ('00000000-0000-4000-a000-0000000000a3', 'c211@t', '{"nome":"C211"}', 'authenticated', 'authenticated'),
   ('00000000-0000-4000-a000-0000000000a4', 'vic@t', '{"nome":"Vic"}', 'authenticated', 'authenticated');
 update perfis set papel = 'admin' where id = '00000000-0000-4000-a000-0000000000a1';
-update perfis set papel = 'gestao' where id = '00000000-0000-4000-a000-0000000000a2';
+-- A gerência deixou de existir (15/10): este usuário passa a ser o operador do 211
+insert into atribuicoes (almox_id, usuario_id, funcao) values (tests.a('211'), '00000000-0000-4000-a000-0000000000a2', 'operador');
 insert into atribuicoes (almox_id, usuario_id, funcao) values
   (tests.a('211'), '00000000-0000-4000-a000-0000000000a3', 'responsavel'),
   (tests.a('MNT'), '00000000-0000-4000-a000-0000000000a4', 'responsavel'),

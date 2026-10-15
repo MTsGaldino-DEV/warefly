@@ -425,6 +425,36 @@ export type Database = {
           },
         ]
       }
+      guias_assinadas: {
+        Row: {
+          anexado_em: string
+          anexado_por: string
+          caminho: string
+          formato: string
+          id: string
+          remessa_id: string | null
+          saida_id: string | null
+        }
+        Insert: {
+          anexado_em?: string
+          anexado_por: string
+          caminho: string
+          formato: string
+          id?: string
+          remessa_id?: string | null
+          saida_id?: string | null
+        }
+        Update: {
+          anexado_em?: string
+          anexado_por?: string
+          caminho?: string
+          formato?: string
+          id?: string
+          remessa_id?: string | null
+          saida_id?: string | null
+        }
+        Relationships: []
+      }
       grupos: {
         Row: {
           ativo: boolean
@@ -1465,10 +1495,15 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      fn_caminho_guia: {
+        Args: { p_nome: string }
+        Returns: Record<string, unknown>
+      }
       fn_eh_admin: { Args: never; Returns: boolean }
       fn_eh_gestao: { Args: never; Returns: boolean }
       fn_eh_gestora: { Args: never; Returns: boolean }
       fn_eh_responsavel: { Args: { p_almox_id: string }; Returns: boolean }
+      fn_em_implantacao: { Args: { p_almox_id: string }; Returns: boolean }
       fn_gere_local: { Args: { p_almox_id: string }; Returns: boolean }
       fn_hoje: { Args: never; Returns: string }
       fn_indicadores: {
@@ -1492,9 +1527,17 @@ export type Database = {
           tempo_transito_medio: number
         }[]
       }
+      fn_pode_anexar_guia: {
+        Args: { p_documento_id: string; p_tipo: string }
+        Returns: boolean
+      }
       fn_pode_ver: { Args: { p_almox_id: string }; Returns: boolean }
       fn_pode_ver_equipe: { Args: { p_equipe_id: string }; Returns: boolean }
       fn_pode_ver_foto: { Args: { p_nome: string }; Returns: boolean }
+      fn_pode_ver_guia: {
+        Args: { p_documento_id: string; p_tipo: string }
+        Returns: boolean
+      }
       fn_pode_ver_remessa: { Args: { p_remessa_id: string }; Returns: boolean }
       rpc_aprovar_pedido: {
         Args: { p_itens: Json; p_pedido_id: string }
@@ -1503,6 +1546,10 @@ export type Database = {
       rpc_ativar_equipe: {
         Args: { p_ativa: boolean; p_equipe_id: string }
         Returns: undefined
+      }
+      rpc_cadastrar_material_rapido: {
+        Args: { p_codigo_sap: string; p_descricao: string; p_unidade: string }
+        Returns: string
       }
       rpc_cancelar_pedido: {
         Args: { p_motivo: string; p_pedido_id: string }
@@ -1549,6 +1596,10 @@ export type Database = {
           p_justificativa: string
           p_tipo: Database["public"]["Enums"]["tipo_ajuste"]
         }
+        Returns: string
+      }
+      rpc_registrar_guia: {
+        Args: { p_caminho: string; p_documento_id: string; p_tipo: string }
         Returns: string
       }
       rpc_registrar_recebimento: {

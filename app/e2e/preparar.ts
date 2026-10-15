@@ -45,10 +45,10 @@ export default async function preparar() {
 
   sql(`
     update perfis set papel = 'admin'  where email = '${USUARIOS.admin.email}';
-    update perfis set papel = 'gestao' where email = '${USUARIOS.gestao.email}';
     insert into atribuicoes (almox_id, usuario_id, funcao)
     select a.id, p.id, f::funcao_atribuicao
       from (values ('211', '${USUARIOS.carlos.email}', 'responsavel'),
+                   ('211', '${USUARIOS.gestao.email}', 'operador'),
                    ('RSP', '${USUARIOS.vinicius.email}', 'responsavel'), ('RSP', '${USUARIOS.vinicius.email}', 'supervisor'),
                    ('AIM', '${USUARIOS.vinicius.email}', 'responsavel'), ('AIM', '${USUARIOS.vinicius.email}', 'supervisor'))
            as v (codigo, email, f)
