@@ -11,6 +11,7 @@ import {
   lerCodigo,
   materiaisDo211,
   MOTIVOS_REDUCAO,
+  nivelDaEquipe,
   nivelDoItem,
   nivelDoLocal,
   nomeLocal,
@@ -23,6 +24,7 @@ import {
   retiradasDaMatricula,
   equipeDe,
   equipesDaOrigem,
+  estoqueDaEquipe,
   estoqueDoCarro,
   normalizarPlaca,
   podeRetirar,
@@ -39,6 +41,7 @@ import {
   type ItemDespacho,
   type ItemRetirada,
   type ItemSolicitacao,
+  type LinhaEstoque,
   type Nivel,
   type NivelItem,
   type Equipe,
@@ -51,7 +54,7 @@ import { Busca, Chave, MultiSelecao, Ordenar } from './Filtros'
 import type { DocumentoGuia } from './Guia'
 import { MOLA } from './movimento'
 import { CampoGuiaAssinada, Contador, Icone, Trilho, type ConteudoJanela } from './Paineis'
-import { CLASSE_DECISAO, ROTULO_SITUACAO, SELO_CAPACIDADE, SELO_NIVEL, subtituloLocal, TEXTO_CAPACIDADE, TEXTO_NIVEL, TOM_NIVEL, TOM_SITUACAO } from './rotulos'
+import { CLASSE_DECISAO, ROTULO_SITUACAO, SELO_CAPACIDADE, SELO_NIVEL, subtituloLocal, TEXTO_CAPACIDADE, TEXTO_NIVEL, TEXTO_NIVEL_CARRO, TOM_NIVEL, TOM_SITUACAO } from './rotulos'
 
 export type NovoDespacho = { base: CodigoBase; solicitacao?: string; solicitacaoId?: string; veiculo: string; itens: ItemDespacho[] }
 export type NovaRetirada = { equipe: string; local: CodigoLocal; retiradoPor: string; itens: ItemRetirada[]; observacao?: string }
@@ -1180,32 +1183,44 @@ function JanelaHistoricoRetiradas({ retiradas, equipes, onAbrir, onFechar, inici
 // Equipe vista pelo mapa da base: quem é, onde retira, o que está no carro e as últimas retiradas
 
 function JanelaResumoEquipe({ id, equipes, retiradas, onAbrir, onFechar }: Acoes & { id: string }) {
+  const [filtro, setFiltro] = useState<'todos' | NivelItem>('todos')
   const e = equipes.find((x) => x.id === id)
   if (!e) return <Cab icone="pessoa" titulo="Equipe não encontrada" subtitulo="Ela pode ter sido removida. Feche e abra pelo menu Equipes." onFechar={onFechar} />
   const carro = estoqueDoCarro(e.id, retiradas)
+  const seriais = new Map(carro.map((i) => [i.codigo, i.seriais]))
   const recentes = retiradas.filter((r) => r.equipe === e.id).sort((a, b) => dataOrdenavel(b.data).localeCompare(dataOrdenavel(a.data)))
-  const unidades = carro.reduce((t, i) => t + i.qtd, 0)
   const colegas = equipesDaOrigem(e.origem, equipes).length - 1
+  // Mesma regra do estoque das bases: amarelo até 20% acima do mínimo, vermelho abaixo.
+  const linhas = estoqueDaEquipe(e, retiradas)
+  const nivel = nivelDaEquipe(e, retiradas)
+  const temKit = linhas.some((l) => l.minimo > 0)
+  const conta = (n: NivelItem) => linhas.filter((l) => l.minimo > 0 && nivelDoItem(l) === n).length
+  const peso = (l: LinhaEstoque) => (l.minimo > 0 ? { abaixo: 0, proximo: 1, ok: 2 }[nivelDoItem(l)] : 3)
+  const visiveis = linhas.filter((l) => filtro === 'todos' || (l.minimo > 0 && nivelDoItem(l) === filtro)).sort((a, b) => peso(a) - peso(b) || a.material.localeCompare(b.material, 'pt-BR'))
   return (
     <>
       <Cab
         icone={e.tipo === 'Moto' ? 'moto' : 'caminhao'}
         titulo={e.codigo}
         subtitulo={`${e.tipo} · supervisão ${e.supervisor} · base de origem ${e.origem === '211' ? '211 Geral' : `${e.origem} · ${nomeLocal(e.origem)}`}${colegas > 0 ? ` com mais ${colegas} ${colegas === 1 ? 'equipe' : 'equipes'}` : ''}`}
-        selo={<span className="selo neutro mono">{e.placa}</span>}
+        selo={
+          <>
+            <span className={`selo ${SELO_NIVEL[nivel]}`}>{TEXTO_NIVEL_CARRO[nivel]}</span> <span className="selo neutro mono">{e.placa}</span>
+          </>
+        }
         onFechar={onFechar}
       />
       <div className="janela-corpo duas-colunas">
         <div className="janela-principal">
           <div className="blocos-numero">
-            <Bloco rotulo="integrantes">
-              <Contador valor={e.integrantes.length} />
-            </Bloco>
             <Bloco rotulo="materiais no carro">
               <Contador valor={carro.length} />
             </Bloco>
-            <Bloco rotulo="unidades no carro">
-              <Contador valor={unidades} />
+            <Bloco rotulo="abaixo do mínimo" tom={conta('abaixo') ? 'alerta' : undefined}>
+              <Contador valor={conta('abaixo')} />
+            </Bloco>
+            <Bloco rotulo="próximos do mínimo" tom={conta('proximo') ? 'atencao' : undefined}>
+              <Contador valor={conta('proximo')} />
             </Bloco>
             <Bloco rotulo="retiradas">
               <Contador valor={recentes.length} />
@@ -1213,36 +1228,60 @@ function JanelaResumoEquipe({ id, equipes, retiradas, onAbrir, onFechar }: Acoes
           </div>
           <section className="secao-janela" aria-label="Estoque do carro">
             <h3>
-              Estoque do carro <span className="sec">· soma do que a equipe retirou</span>
+              Estoque do carro <span className="sec">· soma do que a equipe retirou, comparada ao kit mínimo de {e.tipo}</span>
             </h3>
+            {temKit && (
+              <div className="chips-v2" role="group" aria-label="Filtrar por situação">
+                {(['todos', 'abaixo', 'proximo', 'ok'] as const).map((f) => (
+                  <button key={f} type="button" className="chip-v2" aria-pressed={filtro === f} onClick={() => setFiltro(f)}>
+                    {f !== 'todos' && <span className={`ponto nivel-${f}${f === 'ok' ? ' ok' : ''}`} />}
+                    {f === 'todos' ? 'Todos' : TEXTO_NIVEL[f]}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="tabela-detalhe carro-tab" role="table" aria-label="Material no carro">
               <div className="linha-detalhe cab" role="row">
                 <span role="columnheader">Código</span>
                 <span role="columnheader">Material</span>
                 <span role="columnheader" className="num">
-                  Quantidade
+                  No carro
                 </span>
+                <span role="columnheader" className="num">
+                  Mínimo
+                </span>
+                <span role="columnheader">Situação</span>
                 <span role="columnheader">Caixas</span>
               </div>
-              {carro.map((i, n) => (
-                <motion.div key={i.codigo} className="linha-detalhe" role="row" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 * n }}>
-                  <span role="cell" className="mono sec">
-                    {i.codigo}
-                  </span>
-                  <span role="cell" className="celula-material">
-                    <span>{i.material}</span>
-                    <Seriais seriais={i.seriais} />
-                  </span>
-                  <span role="cell" className="num">
-                    <strong>{i.qtd.toLocaleString('pt-BR')}</strong> <span className="sec">{i.unidade}</span>
-                  </span>
-                  <span role="cell" className="sec">
-                    {emCaixas(i.seriais) ?? '—'}
-                  </span>
-                </motion.div>
-              ))}
-              {carro.length === 0 && <p className="vazio-v2">Nada no carro: a equipe ainda não retirou material.</p>}
+              {visiveis.map((l, n) => {
+                const nv = nivelDoItem(l)
+                const s = seriais.get(l.codigo)
+                return (
+                  <motion.div key={l.codigo} className="linha-detalhe" role="row" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 * n }}>
+                    <span role="cell" className="mono sec">
+                      {l.codigo}
+                    </span>
+                    <span role="cell" className="celula-material">
+                      <span>{l.material}</span>
+                      <Seriais seriais={s} />
+                    </span>
+                    <span role="cell" className={`num${l.minimo > 0 ? ` saldo nivel-${nv}` : ''}`}>
+                      <strong>{l.saldo.toLocaleString('pt-BR')}</strong> <span className="sec">{l.unidade}</span>
+                    </span>
+                    <span role="cell" className="num sec">
+                      {l.minimo > 0 ? l.minimo.toLocaleString('pt-BR') : '—'}
+                    </span>
+                    <span role="cell">{l.minimo > 0 ? <span className={`selo ${SELO_NIVEL[nv]}`}>{TEXTO_NIVEL[nv]}</span> : <span className="selo neutro">Fora do kit</span>}</span>
+                    <span role="cell" className="sec">
+                      {emCaixas(s) ?? '—'}
+                    </span>
+                  </motion.div>
+                )
+              })}
+              {linhas.length === 0 && <p className="vazio-v2">Nada no carro e sem kit mínimo cadastrado para {e.tipo}.</p>}
+              {linhas.length > 0 && visiveis.length === 0 && <p className="vazio-v2">Nenhum material com esse filtro. Escolha outra situação.</p>}
             </div>
+            {!temKit && linhas.length > 0 && <p className="nota-v2">O tipo {e.tipo} ainda não tem kit mínimo cadastrado: o carro fica sem cor até o kit ser lançado.</p>}
             <p className="nota-v2">O que foi aplicado em campo ainda não é descontado. Essa baixa entra quando ligarmos ao sistema real.</p>
           </section>
           <section className="secao-janela" aria-label="Retiradas recentes">

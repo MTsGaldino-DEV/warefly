@@ -15,10 +15,15 @@ import {
   equipeDe,
   EQUIPES,
   equipesDaOrigem,
+  estoqueDaEquipe,
   estoqueDoCarro,
   estoqueDoLocal,
   GRUPOS,
+  KIT_POR_TIPO,
   lerCodigo,
+  minimosDaEquipe,
+  nivelDaEquipe,
+  nivelDasEquipes,
   nivelDoItem,
   nivelDoLocal,
   podeRetirar,
@@ -34,6 +39,7 @@ import {
   type Colaborador,
   type Equipe,
   type LinhaEstoque,
+  type MinimoCarro,
   type Retirada,
   type Solicitacao,
 } from './exemplo'
@@ -84,6 +90,9 @@ describe('sem dados de exemplo', () => {
     for (const lista of [COLABORADORES, EQUIPES, SOLICITACOES, DESPACHOS, RESERVAS, DIVERGENCIAS, RETIRADAS, COBERTURA_BASES]) expect(lista).toEqual([])
     expect(CAIXAS_MEDIDOR).toEqual({})
   })
+  it('kit mínimo das equipes começa vazio', () => {
+    expect(KIT_POR_TIPO).toEqual({ Moto: [], 'Moto/Multifuncional': [] })
+  })
   it('local sem inventário fica sem cor de situação', () => {
     for (const b of BASES) expect(nivelDoLocal(estoqueDoLocal(b.codigo))).toBe('sem')
     expect(nivelDoLocal(estoqueDoLocal('211'))).toBe('sem')
@@ -111,6 +120,55 @@ describe('nível do estoque em relação ao mínimo', () => {
   })
   it('local sem material lançado não tem nível', () => {
     expect(nivelDoLocal([])).toBe('sem')
+  })
+})
+
+const min = (codigo: string, material: string, minimo: number, unidade = 'un'): MinimoCarro => ({ codigo, material, unidade, minimo })
+const KIT: Record<Equipe['tipo'], MinimoCarro[]> = {
+  Moto: [min('10030117', 'Fita', 2, 'rl')],
+  'Moto/Multifuncional': [min('10018832', 'Lacre', 20), min('10052311', 'Medidor', 5), min('10061204', 'Cabo', 30, 'm')],
+}
+const comAjuste = (id: string, ajustes: MinimoCarro[]) => ({ ...EQ.find((e) => e.id === id)!, ajustesMinimo: ajustes })
+
+describe('mínimo do carro da equipe', () => {
+  it('a equipe herda o kit do tipo', () => {
+    expect(minimosDaEquipe(EQ[0], KIT)).toEqual(KIT.Moto)
+    expect(minimosDaEquipe(EQ[1], KIT).map((m) => m.codigo)).toEqual(['10018832', '10052311', '10061204'])
+  })
+  it('ajuste da equipe muda o mínimo, inclui material e, com zero, tira do kit', () => {
+    const e = comAjuste('e3', [min('10018832', 'Lacre', 40), min('10061204', 'Cabo', 0, 'm'), min('10044870', 'Conector', 4)])
+    expect(minimosDaEquipe(e, KIT).map((m) => [m.codigo, m.minimo])).toEqual([
+      ['10018832', 40],
+      ['10052311', 5],
+      ['10044870', 4],
+    ])
+  })
+  it('material do kit que a equipe não tem entra com saldo zero', () => {
+    const cabo = estoqueDaEquipe(EQ[1], RET, KIT).find((l) => l.codigo === '10061204')
+    expect(cabo).toMatchObject({ saldo: 0, minimo: 30 })
+  })
+  it('material no carro fora do kit aparece com mínimo zero e não conta para a cor', () => {
+    const fita = estoqueDaEquipe(EQ[0], RET, { ...KIT, Moto: [] }).find((l) => l.codigo === '10030117')
+    expect(fita).toMatchObject({ saldo: 3, minimo: 0 })
+    expect(nivelDaEquipe(EQ[0], RET, { ...KIT, Moto: [] })).toBe('sem')
+  })
+  it('mesma regra das bases: até 20% acima é amarelo, abaixo é vermelho, pelo pior material', () => {
+    // MOTO 01 tem 3 fitas no carro.
+    expect(nivelDaEquipe(EQ[0], RET, { ...KIT, Moto: [min('10030117', 'Fita', 3, 'rl')] })).toBe('proximo')
+    expect(nivelDaEquipe(EQ[0], RET, { ...KIT, Moto: [min('10030117', 'Fita', 2, 'rl')] })).toBe('ok')
+    expect(nivelDaEquipe(EQ[0], RET, { ...KIT, Moto: [min('10030117', 'Fita', 4, 'rl')] })).toBe('abaixo')
+    // MULT 01: lacre 24/20 (amarelo), medidor 12/5 (normal), cabo 0/30 (vermelho).
+    expect(nivelDaEquipe(EQ[1], RET, KIT)).toBe('abaixo')
+    expect(nivelDaEquipe(comAjuste('e3', [min('10061204', 'Cabo', 0, 'm')]), RET, KIT)).toBe('proximo')
+  })
+  it('sem kit nem ajuste a equipe fica sem cor', () => {
+    expect(nivelDaEquipe(EQ[2], RET)).toBe('sem')
+  })
+  it('aviso no mapa geral pega o pior carro com origem no local', () => {
+    expect(nivelDasEquipes('MNT', EQ, RET, KIT)).toBe('abaixo')
+    expect(nivelDasEquipes('211', EQ, RET, { ...KIT, Moto: [min('10030117', 'Fita', 3, 'rl')] })).toBe('proximo')
+    expect(nivelDasEquipes('211', EQ, RET, KIT)).toBeNull()
+    expect(nivelDasEquipes('SMS', EQ, RET, KIT)).toBeNull()
   })
 })
 

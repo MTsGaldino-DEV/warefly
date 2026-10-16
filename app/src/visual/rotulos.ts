@@ -5,6 +5,8 @@ import { RETIRAM_DO_211, type Capacidade, type CodigoLocal, type Decisao, type N
 export type TomTrilho = 'ok' | 'atencao' | 'alerta'
 export const TOM_NIVEL: Record<Nivel, TomTrilho> = { ok: 'ok', proximo: 'atencao', abaixo: 'alerta', sem: 'ok' }
 export const TEXTO_NIVEL: Record<Nivel, string> = { ok: 'Normal', proximo: 'Próximo do mínimo', abaixo: 'Abaixo do mínimo', sem: 'Sem inventário' }
+/** No carro da equipe, "sem" quer dizer que o tipo ainda não tem kit mínimo cadastrado. */
+export const TEXTO_NIVEL_CARRO: Record<Nivel, string> = { ...TEXTO_NIVEL, sem: 'Sem kit mínimo' }
 export const SELO_NIVEL: Record<Nivel, string> = { ok: 'ok', proximo: 'atencao', abaixo: 'alerta', sem: 'neutro' }
 
 export const CLASSE_DECISAO: Record<Decisao, string> = { Aprovado: 'ok', Reduzido: 'transito', 'Sem saldo': 'alerta', Cancelado: 'neutro' }

@@ -989,3 +989,20 @@ button.chip-mini:hover { background: var(--st-alerta-fundo); color: var(--st-ale
 .chips-bases { display: flex; flex-wrap: wrap; gap: var(--esp-2); }
 .chip-base { padding: 2px var(--esp-3); border-radius: var(--raio-badge); background: var(--superficie-elevada); box-shadow: inset 0 0 0 1px var(--borda-forte); font-size: 0.68rem; font-family: var(--fonte-mono); color: var(--texto-2); }
 .chip-base.forte { background: var(--st-ok-fundo); color: var(--st-ok-texto); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cor-operacao) 35%, transparent); }
+
+/* Carro da equipe pelo kit mínimo: mesma regra e cores das bases. */
+.no-equipe.nivel-proximo { --base-forte: var(--st-atencao); background: color-mix(in srgb, var(--st-atencao) 88%, black); color: var(--cor-estrutura); }
+.no-equipe.nivel-abaixo { --base-forte: var(--st-alerta); background: color-mix(in srgb, var(--st-alerta) 82%, black); }
+.no-equipe-nivel { align-self: flex-start; margin-top: var(--esp-1); padding: 1px var(--esp-3); border-radius: var(--raio-pilula); font-size: 0.58rem; font-weight: var(--peso-forte); background: color-mix(in srgb, currentColor 14%, transparent); }
+/* Aviso no mapa geral: alguma equipe com origem no local está com o carro amarelo ou vermelho. */
+.aviso-equipes { position: absolute; top: -8px; right: -10px; z-index: 2; display: grid; place-items: center; width: 20px; height: 20px; border-radius: var(--raio-pilula); background: var(--superficie-elevada); box-shadow: 0 0 0 2px var(--aviso-cor, var(--st-atencao)), 0 4px 10px rgba(17, 24, 39, .18); color: var(--aviso-cor, var(--st-atencao)); }
+.aviso-equipes .ic { width: 12px; height: 12px; }
+.aviso-equipes.nivel-proximo { --aviso-cor: var(--st-atencao); }
+.aviso-equipes.nivel-abaixo { --aviso-cor: var(--st-alerta); }
+.no-base:has(> .aviso-equipes) { position: relative; }
+.no-base > .aviso-equipes { top: -9px; right: 3px; }
+.no-211-cab .aviso-equipes { position: static; flex: none; margin-left: auto; }
+.no-211-cab .aviso-equipes + .ponto { margin-left: var(--esp-3); }
+.legenda-mapa i.aviso-equipes { position: static; width: 10px; height: 10px; border-radius: var(--raio-pilula); box-shadow: 0 0 0 2px var(--st-alerta); background: var(--superficie-elevada); }
+.tabela-detalhe.carro-tab .linha-detalhe { grid-template-columns: 90px minmax(180px, 1fr) 100px 70px 140px minmax(90px, .7fr); }
+.secao-janela .chips-v2 { margin-bottom: var(--esp-4); }

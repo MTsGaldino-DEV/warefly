@@ -23,6 +23,8 @@ import {
   estoqueDoCarro,
   estoqueDoLocal,
   GRUPOS,
+  nivelDaEquipe,
+  nivelDasEquipes,
   nivelDoLocal,
   nomeLocal,
   RESERVAS,
@@ -33,6 +35,7 @@ import {
   type Despacho,
   type Equipe,
   type Nivel,
+  type NivelItem,
   type Retirada,
 } from './exemplo'
 import { MOLA } from './movimento'
@@ -108,10 +111,11 @@ function posicoesBases() {
   return { x: x as Record<CodigoBase, number>, centroGrupo, centro: fim / 2 }
 }
 
-type Dados211 = { materiais: number; nivel: Nivel; ativo: boolean }
+/** equipes = pior carro com origem no local (aviso no mapa geral); null quando todos estão normais. */
+type Dados211 = { materiais: number; nivel: Nivel; ativo: boolean; equipes: NivelItem | null }
 type DadosReserva = { alerta: boolean }
 type DadosJuncao = { rotulo?: string }
-type DadosBase = { codigo: CodigoBase; nome: string; nivel: Nivel; divergencia: boolean; ativo: boolean }
+type DadosBase = { codigo: CodigoBase; nome: string; nivel: Nivel; divergencia: boolean; ativo: boolean; equipes: NivelItem | null }
 type NoMapa =
   | Node<Dados211, 'geral'>
   | Node<DadosReserva, 'reserva'>
@@ -129,7 +133,7 @@ function nosPadrao(ativos: Set<CodigoBase>): NoMapa[] {
       id: '211',
       type: 'geral',
       position: { x: centro - LARGURA_211 / 2, y: Y_211 },
-      data: { materiais: estoqueDoLocal('211').length, nivel: nivelDoLocal(estoqueDoLocal('211')), ativo: ativos.size > 0 },
+      data: { materiais: estoqueDoLocal('211').length, nivel: nivelDoLocal(estoqueDoLocal('211')), ativo: ativos.size > 0, equipes: null },
     },
     { id: 'j0', type: 'juncao', position: { x: centro - MEIA_JUNCAO, y: Y_TRONCO }, data: {} },
     ...GRUPOS.map((g): NoMapa => ({ id: `j-${g.id}`, type: 'juncao', position: { x: centroGrupo[g.id] - MEIA_JUNCAO, y: Y_GRUPO }, data: { rotulo: g.rotulo } })),
@@ -137,7 +141,7 @@ function nosPadrao(ativos: Set<CodigoBase>): NoMapa[] {
       id: `base-${b.codigo}`,
       type: 'base',
       position: { x: x[b.codigo], y: Y_BASE },
-      data: { codigo: b.codigo, nome: b.nome, nivel: nivelDoLocal(estoqueDoLocal(b.codigo)), divergencia: BASES_COM_ALERTA.includes(b.codigo), ativo: ativos.has(b.codigo) },
+      data: { codigo: b.codigo, nome: b.nome, nivel: nivelDoLocal(estoqueDoLocal(b.codigo)), divergencia: BASES_COM_ALERTA.includes(b.codigo), ativo: ativos.has(b.codigo), equipes: null },
     })),
   ]
   const salvas = lerPosicoes()
@@ -178,6 +182,17 @@ function Ponto({ tipo, posicao, id, alerta, desligado }: { tipo: 'source' | 'tar
 }
 
 const TEXTO_NIVEL: Record<Nivel, string> = { ok: 'estoque normal', proximo: 'material próximo do mínimo', abaixo: 'material abaixo do mínimo', sem: 'sem inventário lançado' }
+const TEXTO_CARRO: Record<Nivel, string> = { ok: 'carro normal', proximo: 'carro próximo do mínimo', abaixo: 'carro abaixo do mínimo', sem: 'sem kit mínimo' }
+const TEXTO_AVISO_EQUIPES: Record<NivelItem, string> = { ok: '', proximo: 'equipe com carro próximo do mínimo', abaixo: 'equipe com carro abaixo do mínimo' }
+
+/** Aviso no mapa geral: alguma equipe com origem no local está com o carro amarelo ou vermelho. A cor do local não muda. */
+function AvisoEquipes({ nivel }: { nivel: NivelItem }) {
+  return (
+    <span className={`aviso-equipes nivel-${nivel}`} title={`Há ${TEXTO_AVISO_EQUIPES[nivel]}. Abra a base para ver.`} aria-hidden="true">
+      <Icone nome="caminhao" />
+    </span>
+  )
+}
 
 /** Prateleira de caixas; algumas posições vazias (só desenho). */
 function Prateleira({ colunas, total, semente }: { colunas: number; total: number; semente: number }) {
@@ -193,7 +208,7 @@ function Prateleira({ colunas, total, semente }: { colunas: number; total: numbe
 /** 211 Geral: um estoque central só. Comercial e moto retiram direto dele. */
 function No211({ data }: NodeProps<Node<Dados211, 'geral'>>) {
   return (
-    <div className={`no-211 nivel-${data.nivel}`} role="img" aria-label={`211 Geral, estoque central: ${TEXTO_NIVEL[data.nivel]}`}>
+    <div className={`no-211 nivel-${data.nivel}`} role="img" aria-label={`211 Geral, estoque central: ${TEXTO_NIVEL[data.nivel]}${data.equipes ? `, ${TEXTO_AVISO_EQUIPES[data.equipes]}` : ''}`}>
       <Ponto tipo="target" posicao={Position.Left} id="esq" />
       <div className="no-211-cab">
         <span className="selo-211">211</span>
@@ -201,6 +216,7 @@ function No211({ data }: NodeProps<Node<Dados211, 'geral'>>) {
           <strong>211 Geral · Estoque central</strong>
           <span>Governador Valadares · {data.materiais.toLocaleString('pt-BR')} materiais</span>
         </div>
+        {data.equipes && <AvisoEquipes nivel={data.equipes} />}
         {data.nivel !== 'ok' && data.nivel !== 'sem' && <span className={`ponto nivel-${data.nivel}`} aria-hidden="true" />}
       </div>
       <div className="estoque-central">
@@ -271,12 +287,13 @@ function NoBase({ data, selected }: NodeProps<Node<DadosBase, 'base'>>) {
   return (
     <motion.div className={`no-base nivel-${data.nivel}${selected ? ' selecionada' : ''}`} whileHover={{ y: -3 }} transition={{ type: 'spring', stiffness: 400, damping: 22 }}>
       <Ponto tipo="target" posicao={Position.Top} alerta={data.divergencia} desligado={!data.ativo} />
-      <div className="bloco" role="img" aria-label={`${data.nome}: ${TEXTO_NIVEL[data.nivel]}${data.divergencia ? ', divergência aberta' : ''}`}>
+      <div className="bloco" role="img" aria-label={`${data.nome}: ${TEXTO_NIVEL[data.nivel]}${data.divergencia ? ', divergência aberta' : ''}${data.equipes ? `, ${TEXTO_AVISO_EQUIPES[data.equipes]}` : ''}`}>
         {Array.from({ length: 30 }, (_, i) => (
           <span key={i} />
         ))}
         {data.divergencia && <span className="pulso-alerta" aria-hidden="true" />}
       </div>
+      {data.equipes && <AvisoEquipes nivel={data.equipes} />}
       <div className="no-rotulo centro">
         <span>{data.codigo}</span>
         <span className="nome-base">{data.nome}</span>
@@ -365,6 +382,9 @@ function Legenda() {
         <i className="nivel-sem" /> Sem inventário
       </span>
       <span>
+        <i className="aviso-equipes nivel-abaixo" /> Equipe com carro perto do mínimo
+      </span>
+      <span>
         <i className="linha" /> Despacho a caminho
       </span>
     </div>
@@ -383,7 +403,7 @@ type PropsGeral = {
   onAbrirBase: (codigo: CodigoBase) => void
 }
 
-function MapaInterno({ despachos, onAbrirLocal, onAbrirDespacho, onAbrirReserva, onAbrirBase }: PropsGeral) {
+function MapaInterno({ despachos, equipes, retiradas, onAbrirLocal, onAbrirDespacho, onAbrirReserva, onAbrirBase }: PropsGeral & { equipes: Equipe[]; retiradas: Retirada[] }) {
   const ativos = useMemo(() => new Set(despachos.map((d) => d.base)), [despachos])
   const [nos, setNos, aoMudarNos] = useNodesState<NoMapa>(nosPadrao(ativos))
   const { fitView } = useReactFlow()
@@ -393,11 +413,11 @@ function MapaInterno({ despachos, onAbrirLocal, onAbrirDespacho, onAbrirReserva,
   const nosVisiveis = useMemo(
     () =>
       nos.map((n): NoMapa => {
-        if (n.type === 'base') return { ...n, data: { ...n.data, ativo: ativos.has(n.data.codigo) } }
-        if (n.type === 'geral') return { ...n, data: { ...n.data, ativo: ativos.size > 0 } }
+        if (n.type === 'base') return { ...n, data: { ...n.data, ativo: ativos.has(n.data.codigo), equipes: nivelDasEquipes(n.data.codigo, equipes, retiradas) } }
+        if (n.type === 'geral') return { ...n, data: { ...n.data, ativo: ativos.size > 0, equipes: nivelDasEquipes('211', equipes, retiradas) } }
         return n
       }),
-    [nos, ativos],
+    [nos, ativos, equipes, retiradas],
   )
 
   const aoSoltar = useCallback((_: unknown, _no: NoMapa, todos: NoMapa[]) => {
@@ -450,7 +470,7 @@ function MapaInterno({ despachos, onAbrirLocal, onAbrirDespacho, onAbrirReserva,
 // Mapa de uma sub-base: o armário em cima e uma caixinha por equipe com origem nela (o carro da equipe).
 
 type DadosArmario = { codigo: CodigoBase; nome: string; nivel: Nivel; supervisor: string; equipes: string[] }
-type DadosEquipe = { equipe: Equipe; materiais: number; unidades: number; pendentes: number; ordem: number }
+type DadosEquipe = { equipe: Equipe; materiais: number; unidades: number; pendentes: number; ordem: number; nivel: Nivel }
 type NoFoco = Node<DadosArmario, 'armario'> | Node<DadosEquipe, 'equipe'>
 
 const LARGURA_EQUIPE = 150
@@ -486,13 +506,13 @@ function NoEquipe({ data }: NodeProps<Node<DadosEquipe, 'equipe'>>) {
   const e = data.equipe
   return (
     <motion.div
-      className="no-equipe"
+      className={`no-equipe nivel-${data.nivel}`}
       initial={{ opacity: 0, scale: 0.4, y: -60 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={{ ...MOLA, delay: 0.12 + data.ordem * 0.06 }}
       whileHover={{ y: -3 }}
       role="button"
-      aria-label={`${e.codigo}, ${e.tipo}, placa ${e.placa}. Abrir equipe.`}
+      aria-label={`${e.codigo}, ${e.tipo}, placa ${e.placa}, ${TEXTO_CARRO[data.nivel]}. Abrir equipe.`}
     >
       <Ponto tipo="target" posicao={Position.Top} desligado={data.materiais === 0} />
       <span className="no-equipe-numero">{data.ordem + 1}</span>
@@ -510,6 +530,7 @@ function NoEquipe({ data }: NodeProps<Node<DadosEquipe, 'equipe'>>) {
         {e.integrantes.length} {e.integrantes.length === 1 ? 'integrante' : 'integrantes'} · {e.tipo === 'Moto' ? 'moto' : 'multifuncional'}
       </span>
       <span className="no-equipe-linha">{data.materiais ? `${data.materiais} materiais · ${data.unidades.toLocaleString('pt-BR')} un no carro` : 'Carro vazio'}</span>
+      {(data.nivel === 'proximo' || data.nivel === 'abaixo') && <span className="no-equipe-nivel">{data.nivel === 'abaixo' ? 'Abaixo do mínimo' : 'Próximo do mínimo'}</span>}
     </motion.div>
   )
 }
@@ -539,7 +560,7 @@ function nosDaBase(codigo: CodigoBase, equipes: Equipe[], retiradas: Retirada[])
       id: `equipe-${e.id}`,
       type: 'equipe',
       position: { x: desloc + (i % POR_LINHA) * PASSO_EQUIPE, y: Y_EQUIPES + linha * PASSO_LINHA },
-      data: { equipe: e, materiais: carro.length, unidades: carro.reduce((t, x) => t + x.qtd, 0), pendentes: retiradas.filter((r) => r.equipe === e.id && retiradaPendente(r)).length, ordem: i },
+      data: { equipe: e, materiais: carro.length, unidades: carro.reduce((t, x) => t + x.qtd, 0), pendentes: retiradas.filter((r) => r.equipe === e.id && retiradaPendente(r)).length, ordem: i, nivel: nivelDaEquipe(e, retiradas) },
     })
     arestas.push({ id: `e-${e.id}`, source: 'armario', target: `equipe-${e.id}`, type: 'rede', data: { ativo: carro.length > 0 } })
   })
@@ -612,6 +633,12 @@ function MapaDaBaseInterno({ codigo, equipes, retiradas, onVoltar, onAbrirEquipe
           <i className="equipe" /> Equipe (origem nesta base)
         </span>
         <span>
+          <i className="nivel-proximo" /> Carro próximo do mínimo
+        </span>
+        <span>
+          <i className="nivel-abaixo" /> Carro abaixo do mínimo
+        </span>
+        <span>
           <i className="linha" /> Material no carro
         </span>
         <span>
@@ -653,7 +680,7 @@ export function Mapa({ baseAberta, equipes, retiradas, onVoltar, onAbrirEquipe, 
       ) : (
         <motion.div key="geral" className="mapa-camada" initial={{ opacity: 0, scale: 1.04 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.06 }} transition={{ duration: 0.22 }}>
           <ReactFlowProvider>
-            <MapaInterno {...geral} />
+            <MapaInterno {...geral} equipes={equipes} retiradas={retiradas} />
           </ReactFlowProvider>
         </motion.div>
       )}

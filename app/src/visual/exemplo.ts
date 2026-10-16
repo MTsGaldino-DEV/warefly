@@ -57,7 +57,18 @@ export type TipoEquipe = (typeof TIPOS_EQUIPE)[number]
  * Equipe que retira material. Retira no 211 Geral sempre; nas bases, só nas liberadas. Não consulta estoque.
  * Base de origem = onde a equipe inicia a jornada (uma base ou o 211 Geral). Escolhida no cadastro; é por ela que a equipe aparece no mapa da base.
  */
-export type Equipe = { id: string; codigo: string; tipo: TipoEquipe; supervisor: Supervisor; integrantes: string[]; bases: CodigoBase[]; placa: string; origem: CodigoLocal }
+export type Equipe = {
+  id: string
+  codigo: string
+  tipo: TipoEquipe
+  supervisor: Supervisor
+  integrantes: string[]
+  bases: CodigoBase[]
+  placa: string
+  origem: CodigoLocal
+  /** Ajuste desta equipe sobre o kit mínimo do tipo (ver minimosDaEquipe). Sem ajuste, vale o kit do tipo. */
+  ajustesMinimo?: MinimoCarro[]
+}
 
 /** Bases liberadas ao cadastrar: moto pode todas (por enquanto); as outras, as do grupo do supervisor. */
 export const basesPadrao = (tipo: TipoEquipe, supervisor: Supervisor): CodigoBase[] => (tipo === 'Moto' ? BASES.map((b) => b.codigo) : basesDoSupervisor(supervisor))
@@ -383,6 +394,54 @@ export function estoqueDoCarro(equipe: string, retiradas: Retirada[]): ItemRetir
     }
   }
   return [...porCodigo.values()].sort((a, b) => a.material.localeCompare(b.material, 'pt-BR'))
+}
+
+// ---------------------------------------------------------------------------
+// Mínimo do carro: a mesma regra das bases. Amarelo com algum material até 20% acima do mínimo,
+// vermelho com algum abaixo. O nível do carro é o pior entre os materiais com mínimo.
+
+/** Mínimo de um material no carro da equipe. */
+export type MinimoCarro = { material: string; codigo: string; unidade: string; minimo: number }
+
+/** Kit mínimo por tipo de equipe: toda equipe do tipo herda. Real: cadastro do kit. Vazio até ligar ao banco. */
+export const KIT_POR_TIPO: Record<TipoEquipe, MinimoCarro[]> = { Moto: [], 'Moto/Multifuncional': [] }
+
+/**
+ * Mínimos que valem para a equipe: o kit do tipo com os ajustes dela por cima.
+ * Ajuste muda o mínimo de um material do kit, inclui material fora do kit ou, com mínimo 0, tira o material do kit.
+ */
+export function minimosDaEquipe(e: Equipe, kit: Record<TipoEquipe, MinimoCarro[]> = KIT_POR_TIPO): MinimoCarro[] {
+  const porCodigo = new Map((kit[e.tipo] ?? []).map((m) => [m.codigo, m]))
+  for (const a of e.ajustesMinimo ?? []) porCodigo.set(a.codigo, a)
+  return [...porCodigo.values()].filter((m) => m.minimo > 0)
+}
+
+/**
+ * Carro comparado ao mínimo: todo material com mínimo aparece (saldo 0 se a equipe não tem),
+ * mais o que está no carro fora do kit (mínimo 0, não conta para a cor).
+ */
+export function estoqueDaEquipe(e: Equipe, retiradas: Retirada[], kit: Record<TipoEquipe, MinimoCarro[]> = KIT_POR_TIPO): LinhaEstoque[] {
+  const linhas = new Map<string, LinhaEstoque>()
+  for (const m of minimosDaEquipe(e, kit)) linhas.set(m.codigo, { material: m.material, codigo: m.codigo, unidade: m.unidade, saldo: 0, minimo: m.minimo })
+  for (const i of estoqueDoCarro(e.id, retiradas)) {
+    const l = linhas.get(i.codigo)
+    if (l) l.saldo = i.qtd
+    else linhas.set(i.codigo, { material: i.material, codigo: i.codigo, unidade: i.unidade, saldo: i.qtd, minimo: 0 })
+  }
+  return [...linhas.values()].sort((a, b) => a.material.localeCompare(b.material, 'pt-BR'))
+}
+
+/** Nível do carro: o pior material com mínimo. Sem kit nem ajuste, "sem" (cinza). */
+export function nivelDaEquipe(e: Equipe, retiradas: Retirada[], kit: Record<TipoEquipe, MinimoCarro[]> = KIT_POR_TIPO): Nivel {
+  return nivelDoLocal(estoqueDaEquipe(e, retiradas, kit).filter((l) => l.minimo > 0))
+}
+
+/** Pior nível entre os carros com origem no local, para o aviso no mapa geral. Null quando todos estão normais ou sem mínimo. */
+export function nivelDasEquipes(local: CodigoLocal, equipes: Equipe[], retiradas: Retirada[], kit: Record<TipoEquipe, MinimoCarro[]> = KIT_POR_TIPO): NivelItem | null {
+  const niveis = equipesDaOrigem(local, equipes).map((e) => nivelDaEquipe(e, retiradas, kit))
+  if (niveis.includes('abaixo')) return 'abaixo'
+  if (niveis.includes('proximo')) return 'proximo'
+  return null
 }
 
 /** Primeiro número livre de despacho (no banco vem de uma sequence). */
